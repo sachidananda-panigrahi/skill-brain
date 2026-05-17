@@ -199,6 +199,43 @@ SkillBrain now uses a manual scan flow for skills extraction.
 2. Trigger `POST /api/scan` (dashboard or API).
 3. Search/manage generated skills through `/api/skills` and MCP tools.
 
+## Release and Publishing
+
+SkillBrain now publishes from GitHub Actions when you push a semantic tag.
+
+### Publish Targets
+
+- npm: `skill-brain`
+- GitHub Packages: `@<github-owner>/skill-brain`
+
+### One-time Setup
+
+1. Configure npm Trusted Publishing for this repository in npm package settings:
+  https://docs.npmjs.com/trusted-publishers
+2. Add this GitHub repository/workflow as a trusted publisher in npm:
+  `.github/workflows/release-publish.yml`
+3. Ensure GitHub Actions is enabled for this repository:
+  https://docs.github.com/actions
+4. Keep package visibility public on npm.
+
+### Release Steps
+
+```bash
+# 1) Update version
+npm version patch
+
+# 2) Push commit and tag
+git push origin main --follow-tags
+```
+
+The release workflow validates tag format, verifies tag version equals `package.json`, runs tests, performs a dry-run publish, then publishes to npm and GitHub Packages.
+
+### Install from GitHub Packages
+
+```bash
+npm install @<github-owner>/skill-brain --registry=https://npm.pkg.github.com
+```
+
 ## What Gets Detected
 
 ### AST-based (high precision, via Babel)

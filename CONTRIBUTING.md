@@ -50,3 +50,33 @@ npm test        # 15 E2E tests
 - [ ] No new mandatory env vars
 - [ ] New API endpoints documented in `docs/API.md`
 - [ ] Commit message follows `feat:` / `fix:` / `refactor:` / `docs:` convention
+
+## Release Checklist
+
+Before the first release from CI, configure npm Trusted Publishing for this repository:
+https://docs.npmjs.com/trusted-publishers
+
+1. Ensure local checks pass:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm test
+npm publish --dry-run
+```
+
+2. Bump version in `package.json`:
+
+```bash
+npm version patch   # or minor / major
+```
+
+3. Push commit and tag:
+
+```bash
+git push origin main --follow-tags
+```
+
+4. Verify workflow run in `.github/workflows/release-publish.yml` succeeds:
+- Validate release tag and package version
+- Publish to npm (`skill-brain`) via Trusted Publishing
+- Publish to GitHub Packages (`@<owner>/skill-brain`)

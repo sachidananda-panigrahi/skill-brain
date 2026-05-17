@@ -5,9 +5,14 @@
   "license": "MIT",
   "author": "Sachidananda Panigrahi",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.0",
   "main": "src/entry-points/index.js",
   "bin": {
-    "skill-brain": "./bin/skill-brain.js"
+    "skill-brain": "bin/skill-brain.js"
   },
   "files": [
     "bin/",
@@ -32,7 +37,10 @@
     "review:main": "node src/engines/scanProject.js --review=origin/main --format=both --output=.review/report",
     "mcp": "node src/entry-points/mcp-server.js",
     "test": "node src/entry-points/test_e2e.js",
-    "test:e2e": "node src/entry-points/test_e2e.js"
+    "test:e2e": "node src/entry-points/test_e2e.js",
+    "prepack": "npm test",
+    "prepublishOnly": "npm test",
+    "publish:dry-run": "npm publish --dry-run"
   },
   "keywords": [
     "mcp",
@@ -49,7 +57,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sachidananda-panigrahi/skill-brain.git"
+    "url": "git+https://github.com/sachidananda-panigrahi/skill-brain.git"
   },
   "homepage": "https://github.com/sachidananda-panigrahi/skill-brain#readme",
   "bugs": {
