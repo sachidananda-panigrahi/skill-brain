@@ -1,0 +1,26 @@
+[
+  {
+    "id": "tv-webapp-testing",
+    "name": "Web App Testing — Playwright E2E Browser Tests",
+    "description": "Use Playwright for end-to-end browser testing of critical user flows. Automate, don't rely on manual QA.",
+    "category": "enforcement",
+    "domain": "Testing & Verification",
+    "severity": "high",
+    "source": "Playwright: Microsoft E2E testing framework",
+    "tags": ["playwright", "e2e", "testing", "browser", "automation", "critical-paths"],
+    "template": "## Playwright E2E Testing\n\n### Setup\n```bash\nnpm install -D @playwright/test\nnpx playwright install\n```\n\n### Test Structure\n```ts\nimport { test, expect } from '@playwright/test';\n\ntest.describe('Critical: User Authentication', () => {\n  test('login flow succeeds with valid credentials', async ({ page }) => {\n    await page.goto('/login');\n    await page.fill('[name=email]', 'user@example.com');\n    await page.fill('[name=password]', 'password123');\n    await page.click('[type=submit]');\n    await expect(page).toHaveURL('/dashboard');\n    await expect(page.locator('h1')).toContainText('Welcome');\n  });\n});\n```\n\n### What to Test with E2E\n- Critical user flows (auth, checkout, onboarding)\n- Error states (network fail, invalid input)\n- Responsive breakpoints (mobile vs desktop)\n- Cross-browser (Chrome, Firefox, Safari via Playwright)\n\n### What NOT to Test with E2E\n- Unit logic (use unit tests; faster)\n- Visual pixel perfection (use visual regression)\n- Every edge case (E2E is slow; test happy path + main errors)\n\n### CI Integration\n```yaml\n- name: Run E2E Tests\n  run: npx playwright test --reporter=html\n- name: Upload Report\n  uses: actions/upload-artifact@v3\n  with:\n    path: playwright-report/\n```\n\n### Checklist\n- [ ] All critical user flows have E2E coverage\n- [ ] Tests use `getByRole`/`getByLabel` (not CSS selectors)\n- [ ] Tests run in CI on every PR\n- [ ] Flaky tests quarantined and fixed within 1 sprint",
+    "parameters": []
+  },
+  {
+    "id": "tv-verification-before-completion",
+    "name": "Verification Before Completion",
+    "description": "Never mark a task done without verifying the fix actually works end-to-end. Tests passing is necessary but not sufficient.",
+    "category": "enforcement",
+    "domain": "Testing & Verification",
+    "severity": "critical",
+    "source": "Quality Engineering: Definition of Done",
+    "tags": ["verification", "done-definition", "quality-gate", "confirmation", "testing", "e2e"],
+    "template": "## Verification Before Completion\n\n### The Rule\nNEVER report a task complete without running the following verification steps. Tests passing alone is not sufficient.\n\n### Verification Checklist\n```\n[ ] 1. Run the full test suite — all tests pass\n[ ] 2. Run the specific test for this change — passes\n[ ] 3. Manually exercise the changed code path in a real environment\n[ ] 4. Check for regressions in related functionality\n[ ] 5. Confirm the original problem/requirement is resolved\n[ ] 6. No console errors in browser devtools (for UI changes)\n[ ] 7. No new TypeScript errors (npm run tsc -- --noEmit)\n```\n\n### Common Failure Modes\n- \"Tests pass\" but the UI is broken (test doesn't cover the changed path)\n- Bug fixed in one place but moved to another\n- Fix works in dev but not in production config\n- Requirement partially met (happy path works, errors broken)\n\n### Mandatory Verification Statement\nBefore marking done, confirm:\n> \"I ran [specific verification step] and observed [specific result]. The original issue is resolved.\"\n\n### For AI-Assisted Development\nAI models cannot verify UI without browser access. Always manually verify:\n- UI renders correctly\n- User interaction works as expected\n- No visual regressions\n- Accessibility (keyboard nav, screen reader)\n\n### Checklist\n- [ ] Test suite passes\n- [ ] Original issue confirmed resolved (not just \"code looks right\")\n- [ ] Regression check done\n- [ ] Verification statement written in PR description",
+    "parameters": []
+  }
+]

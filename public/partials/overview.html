@@ -1,0 +1,62 @@
+<section id="sec-overview" class="p-8">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">Skills Overview</h1>
+      <p class="text-slate-500 text-sm mt-0.5">Browse and manage your skill library</p>
+    </div>
+    <button onclick="loadSkills()"
+      class="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div><p class="text-2xl font-bold text-slate-900" id="statTotal">—</p><p class="text-xs text-slate-500">Total Skills</p></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div><p class="text-2xl font-bold text-slate-900" id="statEnforce">—</p><p class="text-xs text-slate-500">Enforcement Rules</p></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+      </div>
+      <div><p class="text-2xl font-bold text-slate-900" id="statProjects">—</p><p class="text-xs text-slate-500">Projects</p></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+      <div class="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center">
+        <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <div><p class="text-2xl font-bold text-slate-900" id="statEngine">—</p><p class="text-xs text-slate-500">Search Engine</p></div>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap gap-3 mb-5">
+    <div class="relative flex-1 min-w-48">
+      <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input id="filterInput" type="text" placeholder="Filter skills…" oninput="filterSkills()"
+        class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+    </div>
+    <select id="typeFilter" onchange="filterSkills()"
+      class="border border-slate-200 bg-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
+      <option value="">All types</option>
+      <option value="enforce">Enforce</option>
+      <option value="project">Project</option>
+      <option value="pattern">Pattern</option>
+      <option value="lib">Library</option>
+      <option value="architect">Architect</option>
+      <option value="anti-pattern">Anti-Pattern</option>
+    </select>
+  </div>
+
+  <div id="skillsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="col-span-full text-center text-slate-400 py-16">Loading skills…</div>
+  </div>
+</section>

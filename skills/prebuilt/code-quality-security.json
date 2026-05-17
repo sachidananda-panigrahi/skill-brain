@@ -1,0 +1,62 @@
+[
+  {
+    "id": "cqs-static-analysis",
+    "name": "Static Analysis — CodeQL + Semgrep + SARIF",
+    "description": "Run CodeQL and Semgrep as part of CI/CD to catch security vulnerabilities and code quality issues before merge.",
+    "category": "enforcement",
+    "domain": "Code Quality & Security",
+    "severity": "critical",
+    "source": "GitHub Advanced Security: CodeQL docs",
+    "tags": ["codeql", "semgrep", "sarif", "static-analysis", "sast", "security", "ci"],
+    "template": "## Static Analysis with CodeQL + Semgrep\n\n### CodeQL Setup (GitHub Actions)\n```yaml\n- name: CodeQL Analysis\n  uses: github/codeql-action/analyze@v3\n  with:\n    languages: javascript, typescript\n    queries: security-and-quality\n```\n\n### Semgrep Setup\n```yaml\n- name: Semgrep Scan\n  uses: semgrep/semgrep-action@v1\n  with:\n    config: >-\n      p/javascript\n      p/typescript\n      p/react\n      p/owasp-top-ten\n```\n\n### SARIF Output\n- Both tools output SARIF format for GitHub Security tab\n- Upload with `github/codeql-action/upload-sarif@v3`\n- Findings visible in Security → Code scanning alerts\n\n### Rules\n- CRITICAL/HIGH findings block PR merge\n- MEDIUM findings require acknowledge or fix\n- LOW findings are informational\n- False positives must be suppressed with code comment, not ignored\n\n### Suppression Format\n```js\n// nosemgrep: rule-id  ← Semgrep suppression\n// lgtm[js/alert-id]  ← CodeQL suppression\n```\n\n### Checklist\n- [ ] CodeQL workflow present in .github/workflows/\n- [ ] Semgrep config includes OWASP Top 10 rules\n- [ ] SARIF results uploaded to GitHub Security tab\n- [ ] CRITICAL/HIGH findings block merge via branch protection\n- [ ] No blanket suppression of entire files",
+    "parameters": []
+  },
+  {
+    "id": "cqs-variant-analysis",
+    "name": "Variant Analysis — Find Similar Bugs Across Codebase",
+    "description": "When a bug is found, use CodeQL variant analysis to find all similar patterns across the entire codebase.",
+    "category": "pattern",
+    "domain": "Code Quality & Security",
+    "severity": "high",
+    "source": "GitHub Security Lab: Variant analysis methodology",
+    "tags": ["variant", "bugs", "codeql", "analysis", "patterns", "taint-tracking"],
+    "template": "## Variant Analysis\n\n### Core Concept\nA bug found in one place likely exists elsewhere. Variant analysis systematically finds all instances of the same vulnerable pattern.\n\n### Process\n1. **Identify the pattern** — Describe the root cause as a code pattern (e.g., \"user input flows into SQL query without sanitization\")\n2. **Write a CodeQL query** — Express the pattern as a taint-tracking query\n3. **Run across codebase** — Find all instances, not just the known one\n4. **Fix all variants** — Patch every instance, not just the reported one\n\n### CodeQL Taint Query Template\n```ql\nimport javascript\nimport DataFlow::PathGraph\n\nclass Config extends TaintTracking::Configuration {\n  Config() { this = \"UserInputToSink\" }\n  override predicate isSource(DataFlow::Node n) {\n    n instanceof Express::RequestParameter\n  }\n  override predicate isSink(DataFlow::Node n) {\n    n instanceof SqlQuery::QueryArgument\n  }\n}\n\nfrom Config cfg, DataFlow::PathNode src, DataFlow::PathNode sink\nwhere cfg.hasFlowPath(src, sink)\nselect sink, src, sink, \"SQL injection: user input reaches query\"\n```\n\n### skill-brain Integration\n- Use `POST /api/skills/anti-patterns/detect` with a pattern description\n- skill-brain will search for similar patterns using RAG\n\n### Checklist\n- [ ] Root cause expressed as a general pattern\n- [ ] All codebase instances found (not just the reported one)\n- [ ] All variants fixed in same PR\n- [ ] Regression test covers the pattern generically",
+    "parameters": []
+  },
+  {
+    "id": "cqs-differential-review",
+    "name": "Differential Review — Security-Focused PR Review",
+    "description": "Review code changes specifically for security regressions using diff analysis and security-aware context.",
+    "category": "enforcement",
+    "domain": "Code Quality & Security",
+    "severity": "high",
+    "source": "OWASP Code Review Guide: Differential security review",
+    "tags": ["pr-review", "security", "diff", "review", "regression", "owasp"],
+    "template": "## Differential Security Review\n\n### Security Review Triggers\nAutomatic security review required when diff touches:\n- Authentication / authorization logic\n- Input parsing / deserialization\n- SQL queries or ORM usage\n- File system operations\n- External API calls\n- Cryptographic operations\n- Session / token management\n- CORS / CSP configuration\n\n### Review Methodology\n```bash\ngit diff origin/main -- '*.ts' '*.js' | grep -E '(eval|innerHTML|dangerouslySetInnerHTML|exec|query|readFile|fetch|process\\.env)'\n```\n\n### Security Checklist Per Change\n- [ ] New input validated before use\n- [ ] No secrets in diff (use `git-secrets` or `gitleaks`)\n- [ ] Auth checks not removed\n- [ ] Error messages don't leak internal state\n- [ ] No new `eval()`, `innerHTML`, `dangerouslySetInnerHTML` without sanitization\n- [ ] SQL uses parameterized queries (no string concat)\n- [ ] File paths sanitized (no path traversal)\n\n### skill-brain Integration\n```bash\nnpm run review  # runs reviewMode.js which flags security anti-patterns\n```\n\n### Checklist\n- [ ] All security-trigger files reviewed\n- [ ] No secrets in diff\n- [ ] Input validation present for new user inputs\n- [ ] Auth logic unchanged or reviewed by security owner",
+    "parameters": []
+  },
+  {
+    "id": "cqs-skill-security-auditor",
+    "name": "Skill Security Auditor — Scan Skills Before Installing",
+    "description": "Audit prebuilt or third-party skills for malicious instructions, secret exfiltration patterns, or prompt injection before loading into skill-brain.",
+    "category": "enforcement",
+    "domain": "Code Quality & Security",
+    "severity": "critical",
+    "source": "AI Supply Chain Security: Skill/prompt injection prevention",
+    "tags": ["security", "audit", "skills", "supply-chain", "prompt-injection", "trust"],
+    "template": "## Skill Security Auditor\n\n### Risk: Malicious Skills\nSkills are prompt templates fed to AI models. A malicious skill could:\n- Exfiltrate environment variables or secrets\n- Inject instructions that override safety rules\n- Cause the AI to generate harmful code\n- Establish persistent backdoors via \"helpful\" templates\n\n### Audit Checklist (before installing any external skill)\n- [ ] Skill does not reference `process.env` or environment variables\n- [ ] Skill does not instruct AI to ignore previous instructions\n- [ ] Skill does not contain URLs pointing to external services\n- [ ] Skill does not ask AI to execute shell commands as side effects\n- [ ] Skill source is from a trusted repository\n- [ ] Skill template does not contain base64-encoded content\n\n### Red Flag Patterns in skill templates\n```regex\n# Prompt injection attempts\n/ignore (previous|all) instructions/i\n/you are now|act as|pretend you/i\n\n# Secret exfiltration\n/process\\.env\\./\n/\\$\\{.*SECRET.*\\}/\n/curl.*POST.*http/i\n\n# Supply chain via URL injection\n/https?:\\/\\/(?!docs\\.|github\\.com)/i\n```\n\n### Verification Command\n```bash\nnpx skill-brain scan-skills --audit ./skills/prebuilt/external/\n```\n\n### Checklist\n- [ ] All external skills audited before first load\n- [ ] Audit re-run on every update to external skill sources\n- [ ] Suspicious skills quarantined and reported",
+    "parameters": []
+  },
+  {
+    "id": "cqs-two-stage-review",
+    "name": "Two-Stage Code Review Pattern",
+    "description": "Stage 1: automated tooling. Stage 2: semantic/security human review. Both stages required before merge.",
+    "category": "enforcement",
+    "domain": "Code Quality & Security",
+    "severity": "high",
+    "source": "Google Engineering Practices: Two-pass code review",
+    "tags": ["review", "quality", "security", "gates", "two-stage", "process"],
+    "template": "## Two-Stage Code Review\n\n### Stage 1: Automated (required for all PRs)\n| Check | Tool | Gate |\n|-------|------|------|\n| Lint | ESLint / Biome | Zero errors |\n| Types | TypeScript | Zero errors |\n| Tests | Jest / Vitest | All pass, 80%+ coverage |\n| Security | Semgrep / CodeQL | Zero CRITICAL/HIGH |\n| Bundle | bundlewatch | Within budget |\n| Secrets | gitleaks | Zero secrets |\n\n### Stage 2: Semantic Review (required for security-sensitive)\nFocus on what Stage 1 cannot catch:\n1. **Logic correctness** — Does it implement the spec?\n2. **Missing error handling** — What happens when X fails?\n3. **Business logic security** — Auth rules correct?\n4. **Abstraction quality** — Right level of abstraction?\n5. **Unintended side effects** — Does it affect other features?\n\n### Severity → Action\n| Level | Action |\n|-------|--------|\n| CRITICAL | Block merge; fix required |\n| HIGH | Block merge; fix or documented exception |\n| MEDIUM | Non-blocking; should fix |\n| LOW | Non-blocking; optional |\n\n### Checklist\n- [ ] All Stage 1 checks passing\n- [ ] Stage 2 reviewer assigned for security-sensitive files\n- [ ] CRITICAL and HIGH issues resolved before merge\n- [ ] Review comments addressed or explicitly dismissed",
+    "parameters": []
+  }
+]

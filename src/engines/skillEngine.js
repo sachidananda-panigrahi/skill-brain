@@ -1,7 +1,11 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const SKILLS_DIR = path.join(__dirname, 'skills');
+// SKILL_BRAIN_DATA allows global npm install to write to a writable directory
+// instead of the read-only node_modules/__dirname location.
+const SKILLS_DIR = process.env.SKILL_BRAIN_DATA
+  ? path.join(process.env.SKILL_BRAIN_DATA, 'skills')
+  : path.join(__dirname, '../../..', 'skills');
 const COMMON_SKILLS_DB = path.join(SKILLS_DIR, 'common.json');
 const PROJECTS_DIR = path.join(SKILLS_DIR, 'projects');
 
@@ -21,7 +25,10 @@ if (!fs.existsSync(COMMON_SKILLS_DB)) {
 
 function loadCommonSkills() {
   try {
-    return fs.readJsonSync(COMMON_SKILLS_DB);
+    const data = fs.readJsonSync(COMMON_SKILLS_DB);
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') return Object.values(data);
+    return [];
   } catch (e) {
     return [];
   }
@@ -29,14 +36,22 @@ function loadCommonSkills() {
 
 function saveCommonSkills(skills) {
   fs.writeJsonSync(COMMON_SKILLS_DB, skills, { spaces: 2 });
+  try { require('./ragIndex').markDirty(null); } catch {}
+}
+
+function projectSkillsFile(projectName) {
+  return path.join(PROJECTS_DIR, projectName, 'skills.json');
 }
 
 function loadProjectSkills(projectName) {
   if (!projectName) return [];
-  const projectFile = path.join(PROJECTS_DIR, `${projectName}.json`);
+  const projectFile = projectSkillsFile(projectName);
   try {
     if (fs.existsSync(projectFile)) {
-      return fs.readJsonSync(projectFile);
+      const data = fs.readJsonSync(projectFile);
+      if (Array.isArray(data)) return data;
+      if (data && typeof data === 'object') return Object.values(data);
+      return [];
     }
   } catch (e) {
     console.error(`Error loading skills for project ${projectName}:`, e.message);
@@ -46,15 +61,17 @@ function loadProjectSkills(projectName) {
 
 function saveProjectSkills(projectName, skills) {
   if (!projectName) return;
-  const projectFile = path.join(PROJECTS_DIR, `${projectName}.json`);
-  fs.writeJsonSync(projectFile, skills, { spaces: 2 });
+  const projectDir = path.join(PROJECTS_DIR, projectName);
+  fs.ensureDirSync(projectDir);
+  fs.writeJsonSync(projectSkillsFile(projectName), skills, { spaces: 2 });
+  try { require('./ragIndex').markDirty(projectName); } catch {}
 }
 
 function loadAllProjectNames() {
   try {
-    return fs.readdirSync(PROJECTS_DIR)
-      .filter(f => f.endsWith('.json'))
-      .map(f => f.replace('.json', ''));
+    return fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name);
   } catch (e) {
     return [];
   }
@@ -78,13 +95,14 @@ function saveSkills(skills, projectName = null) {
 }
 
 function addSkill(skill, projectName = null) {
-  const skills = loadSkills(projectName);
-  // Assign a unique id if not provided
   if (!skill.id) {
     skill.id = skill.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
   }
-  
-  // If we are adding to a project, we only save the project-specific skills
+  // Auto-populate TOON optional fields
+  if (!skill.tags) skill.tags = [];
+  if (!skill.severity) skill.severity = 'medium';
+  skill.updatedAt = new Date().toISOString();
+
   if (projectName) {
     const projectSkills = loadProjectSkills(projectName);
     projectSkills.push(skill);
@@ -107,7 +125,7 @@ function updateSkill(id, updates, projectName = null) {
       return skills[idx];
     }
   }
-  
+
   // Fallback to common if not found in project or no project specified
   const common = loadCommonSkills();
   const commonIdx = common.findIndex(s => s.id === id);
@@ -116,7 +134,7 @@ function updateSkill(id, updates, projectName = null) {
     saveCommonSkills(common);
     return common[commonIdx];
   }
-  
+
   return null;
 }
 
@@ -131,7 +149,7 @@ function deleteSkill(id, projectName = null) {
       deleted = true;
     }
   }
-  
+
   if (!deleted) {
     let common = loadCommonSkills();
     const initialLength = common.length;
@@ -141,25 +159,19 @@ function deleteSkill(id, projectName = null) {
       deleted = true;
     }
   }
-  
+
   return deleted;
 }
 
-function runSkillInference() {
-  // Placeholder for existing functionality
-  console.log("Running skill inference...");
-}
-
-module.exports = { 
-  runSkillInference, 
-  loadSkills, 
-  saveSkills, 
+module.exports = {
+  loadSkills,
+  saveSkills,
   loadCommonSkills,
   saveCommonSkills,
   loadProjectSkills,
   saveProjectSkills,
   loadAllProjectNames,
-  addSkill, 
-  updateSkill, 
-  deleteSkill 
+  addSkill,
+  updateSkill,
+  deleteSkill
 };

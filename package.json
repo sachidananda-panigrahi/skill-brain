@@ -1,21 +1,67 @@
 {
   "name": "skill-brain",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
+  "version": "1.1.0",
+  "description": "RAG-powered skill engine for AI code assistants, exposed via MCP",
+  "license": "MIT",
+  "author": "Sachidananda Panigrahi",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "src/entry-points/index.js",
+  "bin": {
+    "skill-brain": "./bin/skill-brain.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "skills/prebuilt/",
+    "skills/common.json"
+  ],
+  "exports": {
+    ".": "./src/entry-points/index.js",
+    "./mcp": "./src/entry-points/mcp-server.js",
+    "./scan": "./src/engines/scanProject.js",
+    "./engine": "./src/engines/skillEngine.js",
+    "./rag": "./src/engines/ragIndex.js"
+  },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "scan": "node scanProject.js",
-    "test": "node test_e2e.js"
+    "start": "node src/entry-points/index.js",
+    "dev": "nodemon src/entry-points/index.js",
+    "scan": "node src/engines/scanProject.js",
+    "scan:add": "node src/engines/scanProject.js --mode=add --path=.",
+    "review": "node src/engines/scanProject.js --review",
+    "review:main": "node src/engines/scanProject.js --review=origin/main --format=both --output=.review/report",
+    "mcp": "node src/entry-points/mcp-server.js",
+    "test": "node src/entry-points/test_e2e.js",
+    "test:e2e": "node src/entry-points/test_e2e.js"
+  },
+  "keywords": [
+    "mcp",
+    "rag",
+    "skills",
+    "ai",
+    "copilot",
+    "cursor",
+    "code-assistant",
+    "claude",
+    "model-context-protocol",
+    "tfidf",
+    "embeddings"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sachidananda-panigrahi/skill-brain.git"
+  },
+  "homepage": "https://github.com/sachidananda-panigrahi/skill-brain#readme",
+  "bugs": {
+    "url": "https://github.com/sachidananda-panigrahi/skill-brain/issues"
   },
   "dependencies": {
+    "@babel/parser": "^7.25.0",
+    "@babel/traverse": "^7.25.0",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "fs-extra": "^11.3.5",
-    "path": "^0.12.7"
+    "repomix": "^0.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

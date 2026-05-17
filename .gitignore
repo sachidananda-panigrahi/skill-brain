@@ -12,8 +12,8 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Project specific
-skills
+# Project specific — per-project skill data is local, not committed
+skills/projects/
 traces/
 *.log
 

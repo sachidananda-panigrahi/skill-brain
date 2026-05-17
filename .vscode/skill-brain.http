@@ -1,0 +1,88 @@
+### Health check
+GET http://localhost:3000/api/health
+
+###
+
+### Search skills
+GET http://localhost:3000/api/skills/search?q=react+hooks+performance&k=5
+
+###
+
+### List all skills
+GET http://localhost:3000/api/skills
+
+###
+
+### Get skill by ID
+GET http://localhost:3000/api/skills/fg-css-specificity
+
+###
+
+### Scan project
+POST http://localhost:3000/api/scan
+Content-Type: application/json
+
+{
+  "path": ".",
+  "mode": "update"
+}
+
+###
+
+### Detect anti-patterns
+POST http://localhost:3000/api/skills/anti-patterns/detect
+Content-Type: application/json
+
+{
+  "code": "const x = document.getElementById('myId'); x.style.color = 'red';"
+}
+
+###
+
+### MCP tool call — search_skills
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "search_skills",
+    "arguments": {
+      "query": "CSS BEM methodology specificity",
+      "k": 3
+    }
+  }
+}
+
+###
+
+### MCP tool call — get_enforcement_rules
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_enforcement_rules",
+    "arguments": {
+      "domain": "Frontend Development Guidelines"
+    }
+  }
+}
+
+###
+
+### MCP list tools
+POST http://localhost:3000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/list",
+  "params": {}
+}

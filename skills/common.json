@@ -1,0 +1,366 @@
+[
+  {
+    "id": "enforce-lcp-optimisation",
+    "name": "Enforce: LCP Optimisation (<2.5s)",
+    "description": "Largest Contentful Paint must be under 2.5 seconds.",
+    "template": "Optimise LCP to <2.5s: add fetchpriority=\"high\" to hero images, preload key resources with <link rel=\"preload\">, eliminate render-blocking CSS above the fold, use CDN for static assets, and avoid lazy-loading the LCP element. Measure with Chrome DevTools Lighthouse and real-user monitoring (CrUX).",
+    "parameters": []
+  },
+  {
+    "id": "enforce-inp-optimisation",
+    "name": "Enforce: INP Optimisation (<200ms)",
+    "description": "Interaction to Next Paint must be under 200ms.",
+    "template": "Keep INP under 200ms: break long tasks (>50ms) with scheduler.yield() or setTimeout(fn, 0), avoid heavy synchronous work in event handlers, use Web Workers for CPU-intensive logic, defer non-critical third-party scripts, and use PerformanceObserver to measure INP in field data.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-cls-prevention",
+    "name": "Enforce: CLS Prevention (<0.1)",
+    "description": "Cumulative Layout Shift must be under 0.1.",
+    "template": "Prevent CLS (<0.1): always specify explicit width and height on <img> and <video> elements, avoid injecting content above existing page content, use font-display: optional or preload fonts to prevent FOIT/FOUT, set min-height on skeleton placeholders, and never dynamically insert banners or ads without reserved space.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-fcp-optimisation",
+    "name": "Enforce: FCP Optimisation (<1.5s)",
+    "description": "First Contentful Paint must be under 1.5 seconds.",
+    "template": "Achieve FCP <1.5s: inline critical above-the-fold CSS, add <link rel=\"preconnect\"> for third-party origins, defer all non-critical JavaScript with defer or async, use server-side rendering or static generation for initial HTML, and minimise server response time (TTFB <600ms).",
+    "parameters": []
+  },
+  {
+    "id": "enforce-tbt-reduction",
+    "name": "Enforce: TBT Reduction (<200ms)",
+    "description": "Total Blocking Time must be under 200ms.",
+    "template": "Reduce TBT to <200ms: code-split at route boundaries, never use synchronous XHR, move CPU-heavy work to Web Workers with requestIdleCallback for non-urgent tasks, tree-shake unused library code, and profile long tasks in Chrome Performance panel before each release.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-react-server-components",
+    "name": "Enforce: React Server Components",
+    "description": "Default to RSC; restrict use client to interactive leaf nodes.",
+    "template": "Default every component to a React Server Component. Add 'use client' only at the smallest interactive leaf node — not at layout or page level. Never fetch data inside client components; fetch in RSCs or Route Handlers. Avoid importing server-only modules into client components (use the server-only package).",
+    "parameters": []
+  },
+  {
+    "id": "enforce-react-concurrent",
+    "name": "Enforce: React Concurrent Features",
+    "description": "Use useTransition and useDeferredValue for non-urgent updates.",
+    "template": "Wrap non-urgent state updates (search, filtering) with useTransition to keep the UI responsive. Use useDeferredValue for expensive renders that should not block high-priority interactions. Wrap route navigation in startTransition. Mark slow renders with React DevTools Profiler before optimising.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nextjs-image",
+    "name": "Enforce: next/image for All Images",
+    "description": "Never use a bare <img> tag in a Next.js project.",
+    "template": "Always use next/image — never bare <img> in Next.js. Set the sizes prop to match the rendered width at each breakpoint. Apply priority={true} only on the LCP image. Use fill layout with a positioned parent for responsive hero images. Set quality={80} unless design requires higher fidelity.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nextjs-font",
+    "name": "Enforce: next/font for Typefaces",
+    "description": "Never load Google Fonts via <link>; use next/font instead.",
+    "template": "Use next/font/google or next/font/local — never a Google Fonts <link> tag. Set display: 'swap'. Subset to the characters and weights actually used. Assign the font as a CSS variable and reference it in Tailwind or global CSS to avoid FOUC.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nextjs-metadata",
+    "name": "Enforce: Next.js Metadata API",
+    "description": "Every page must export a metadata object with og:image and canonical URL.",
+    "template": "Every page and layout must export a metadata object (Next.js 13+ App Router). Include title, description, openGraph.images (1200×630), twitter.card: 'summary_large_image', and alternates.canonical. Use generateMetadata for dynamic routes. Never use <Head> with bare meta tags in App Router.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nextjs-app-router",
+    "name": "Enforce: Next.js App Router Conventions",
+    "description": "Use layout.tsx, loading.tsx, error.tsx, not-found.tsx correctly.",
+    "template": "In App Router: define layout.tsx for shared chrome, loading.tsx for instant loading UI with Suspense, error.tsx as Error Boundary for subtree errors, and not-found.tsx for 404 states. Never mix Pages Router patterns (getServerSideProps, getStaticProps) inside the app/ directory.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nextjs-streaming",
+    "name": "Enforce: Next.js Streaming & Suspense",
+    "description": "Stream data-dependent UI with Suspense boundaries.",
+    "template": "Wrap data-dependent UI in <Suspense fallback={<Skeleton />}> to stream it from the server without blocking the full page. Avoid top-level await in layout files that would block all child segments. Use React.cache() to deduplicate fetch calls across RSC renders in the same request.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-react-error-handling",
+    "name": "Enforce: React Error Boundaries",
+    "description": "Every subtree must have an ErrorBoundary with monitoring.",
+    "template": "Wrap every major UI subtree in an ErrorBoundary (class component or react-error-boundary). On error, log to Sentry/Datadog and show a user-friendly fallback — never a blank screen. In Next.js App Router, use error.tsx; in Pages Router, use a custom _error.tsx page.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-csp-policy",
+    "name": "Enforce: Content Security Policy",
+    "description": "Deploy a strict nonce-based CSP header.",
+    "template": "Set Content-Security-Policy on every response: default-src 'self'; script-src 'self' 'nonce-{RANDOM}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-src 'none'; object-src 'none'. Generate a cryptographic nonce per request. Send violations to a report-uri endpoint. Never use unsafe-eval.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-owasp-xss",
+    "name": "Enforce: XSS Prevention (OWASP A03)",
+    "description": "Sanitise all user-supplied HTML; never use innerHTML unsanitised.",
+    "template": "Never set innerHTML, outerHTML, or dangerouslySetInnerHTML with unsanitised user input. Use DOMPurify.sanitize() when rich-text HTML must be rendered. Escape all template literals that render into HTML. Set the X-Content-Type-Options: nosniff response header. Validate and reject unexpected Content-Type on API requests.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-owasp-injection",
+    "name": "Enforce: Injection Prevention (OWASP A03)",
+    "description": "Use parameterised queries; never concatenate SQL from user input.",
+    "template": "Use parameterised queries or an ORM for all database access. Never concatenate user-supplied values into SQL strings. Validate and sanitise all inputs at system boundaries using a schema (Zod, Joi). Apply the principle of least privilege to database roles. Log and alert on injection attempt patterns.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-http-security-headers",
+    "name": "Enforce: HTTP Security Headers",
+    "description": "Send HSTS, X-Frame-Options, X-Content-Type-Options on every response.",
+    "template": "Set these headers on every HTTP response: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy: strict-origin-when-cross-origin, Permissions-Policy: camera=(), microphone=(), geolocation=(). Validate with securityheaders.com in CI.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-dependency-security",
+    "name": "Enforce: Dependency Security Auditing",
+    "description": "Run npm audit --audit-level=high in CI; use Dependabot.",
+    "template": "Run npm audit --audit-level=high as a CI gate — fail the build on HIGH or CRITICAL vulnerabilities. Enable GitHub Dependabot for automated PRs. Pin exact versions for security-critical deps (no ^ or ~). Use socket.dev or Snyk to detect malicious packages. Review changelogs before upgrading major versions.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-secrets-management",
+    "name": "Enforce: Secrets Management",
+    "description": "All secrets in env vars; validate at startup; never commit .env.",
+    "template": "Store all secrets (API keys, DB credentials, signing keys) in environment variables — never in source code or committed .env files. Validate that required vars are present at startup and throw a descriptive error if missing. In production, use a secret manager (AWS Secrets Manager, Vault, Doppler). Rotate any secret that may have been exposed immediately.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-typescript-strict",
+    "name": "Enforce: TypeScript Strict Mode",
+    "description": "Enable strict:true, noUncheckedIndexedAccess, exactOptionalPropertyTypes.",
+    "template": "Enable \"strict\": true in tsconfig.json and additionally set \"noUncheckedIndexedAccess\": true and \"exactOptionalPropertyTypes\": true. Ban // @ts-ignore completely — use // @ts-expect-error with a comment explaining why. Enable \"noImplicitReturns\" and \"noFallthroughCasesInSwitch\". Run tsc --noEmit as a CI gate.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-no-any",
+    "name": "Enforce: Zero any in Application Code",
+    "description": "Use unknown + type narrowing; never use any.",
+    "template": "Ban any in application code via ESLint @typescript-eslint/no-explicit-any rule set to error. Use unknown for external or untrusted data and narrow with type guards or Zod parse. Use generics instead of any for reusable utilities. Reserve any only for generated code or third-party declarations that cannot be typed.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-api-contracts",
+    "name": "Enforce: Zod API Contracts at Every Boundary",
+    "description": "Parse request bodies, env vars, and external responses with Zod.",
+    "template": "Define a Zod schema for every API request body, query string, env var set, and external API response. Use schema.parse() to validate at system entry points — never trust raw input. Infer TypeScript types from schemas (z.infer<typeof schema>) to keep runtime validation and static types in sync.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-type-safe-patterns",
+    "name": "Enforce: Type-Safe Patterns",
+    "description": "Discriminated unions, branded types, exhaustive switch.",
+    "template": "Model state machines with discriminated unions (type State = { status: \"loading\" } | { status: \"error\"; error: Error }). Use branded types for domain IDs (type UserId = string & { __brand: \"UserId\" }). Make switch statements exhaustive with an assertNever fallthrough. Avoid type assertions (as Type) — use Zod or type guards instead.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-css-architecture",
+    "name": "Enforce: CSS Module Scoping",
+    "description": "Use CSS Modules or styled-components; no global class collisions.",
+    "template": "Scope all component styles using CSS Modules (.module.css), CSS-in-JS (styled-components, Emotion), or Tailwind utility classes. Never write global class names that can collide across components. Reserve global CSS only for reset, typography tokens, and :root custom properties. Use BEM only for third-party HTML you cannot modify.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-css-custom-properties",
+    "name": "Enforce: CSS Custom Properties for Tokens",
+    "description": "All palette, spacing, radius, and duration in :root custom properties.",
+    "template": "Define all design tokens as CSS custom properties on :root: --color-*, --space-*, --radius-*, --duration-*, --ease-*. Never hardcode hex colours, px spacing, or duration values inside component CSS. Reference tokens consistently so a single :root update reshapes the entire system. Document the token set in a tokens.css file.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-responsive-design",
+    "name": "Enforce: Mobile-First Responsive Design",
+    "description": "Mobile-first breakpoints; fluid typography with clamp(); container queries.",
+    "template": "Write mobile-first CSS: base styles target the smallest viewport, min-width media queries add complexity for larger screens. Use clamp() for fluid typography and spacing (e.g. font-size: clamp(1rem, 0.9rem + 0.5vw, 1.25rem)). Adopt container queries (@container) for component-level responsiveness rather than page-level breakpoints where appropriate.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-cascade-layers",
+    "name": "Enforce: @layer for Specificity Control",
+    "description": "Use @layer (reset, base, components, utilities) to manage cascade.",
+    "template": "Declare @layer reset, base, components, utilities at the top of global CSS. Place reset styles, base typography, component overrides, and utility classes in their respective layers. This eliminates specificity wars without !important. Never raise specificity using ID selectors in component CSS.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-test-coverage",
+    "name": "Enforce: 80% Test Coverage Minimum",
+    "description": "Statement coverage ≥80%; 100% for business-critical paths.",
+    "template": "Configure the test runner (Jest/Vitest) to fail if statement coverage drops below 80%. Set 100% branch coverage for business-critical paths (auth, payments, data mutations). Run coverage in CI with --coverage --coverageThreshold. Never merge a PR that reduces coverage without a documented exception.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-testing-pyramid",
+    "name": "Enforce: Testing Pyramid",
+    "description": "Unit > Integration > E2E; mock at boundaries, not internals.",
+    "template": "Follow the testing pyramid: many unit tests, fewer integration tests, minimal E2E tests. Mock at system boundaries (HTTP, database, file system) — never mock internal module functions. Avoid snapshot-only testing (brittle, hides intent). Write tests that describe behaviour, not implementation.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-e2e-coverage",
+    "name": "Enforce: Playwright E2E for Critical Flows",
+    "description": "Playwright covers all critical flows on 3 viewports.",
+    "template": "Write Playwright E2E tests for every critical user flow (login, checkout, data save). Test on 3 viewport sizes: 375px (mobile), 768px (tablet), 1440px (desktop). Run visual regression snapshots for design system components. Store test artifacts (screenshots, traces) in CI for failed runs.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-testing-accessibility",
+    "name": "Enforce: Accessibility Testing",
+    "description": "axe-core in E2E; keyboard navigation; colour contrast checks.",
+    "template": "Integrate axe-core into Playwright E2E tests to catch WCAG violations automatically. Write keyboard navigation tests (Tab, Enter, Escape, arrow keys). Assert colour contrast meets 4.5:1 for normal text, 3:1 for large text. Test with VoiceOver (macOS) and NVDA (Windows) at least quarterly.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-bundle-budget",
+    "name": "Enforce: Bundle Size Budget",
+    "description": "Landing: JS <150KB gz; App: JS <300KB gz. Block PRs over budget.",
+    "template": "Set bundle budgets in bundler config: landing page JS <150KB gzipped, CSS <30KB; app pages JS <300KB, CSS <50KB. Fail CI on budget exceeded using bundlesize or Next.js built-in. Run bundle analysis with @next/bundle-analyzer or rollup-plugin-visualizer on every significant dependency addition.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-tree-shaking",
+    "name": "Enforce: Tree-Shaking & No Barrel Exports",
+    "description": "Named imports; sideEffects:false; avoid barrel re-exports for large libs.",
+    "template": "Use named imports (import { Button } from \"@mui/material\") — never default-import whole libraries. Set \"sideEffects\": false in package.json for libraries you author. Avoid barrel index.ts files that re-export everything from large modules — they defeat tree-shaking. Profile unused exports with ts-prune or @typescript-eslint/no-unused-vars.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-image-formats",
+    "name": "Enforce: Modern Image Formats",
+    "description": "AVIF first, WebP fallback; srcset+sizes; never over 2x rendered size.",
+    "template": "Serve AVIF with WebP fallback using <picture> or next/image. Always set srcset and sizes attributes. Never ship an image more than 2× the rendered CSS size. Strip EXIF metadata. Use squoosh or Sharp for processing. Aim for <200KB per hero image, <50KB for UI icons/thumbnails.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-font-loading",
+    "name": "Enforce: Optimised Font Loading",
+    "description": "Max 2 families; WOFF2 only; preload critical weight; font-display:swap.",
+    "template": "Use at most 2 font families per project. Serve only WOFF2 format. Preload the single critical weight/style with <link rel=\"preload\" as=\"font\" crossorigin>. Use font-display: swap. Subset to the Unicode ranges actually used. Use next/font to eliminate layout shift caused by font swap in Next.js.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-caching-strategy",
+    "name": "Enforce: HTTP Caching Strategy",
+    "description": "Immutable assets max-age=1yr; HTML no-cache; SWR for API; CDN for static.",
+    "template": "Set Cache-Control: max-age=31536000, immutable on all hashed static assets (JS, CSS, images). Set Cache-Control: no-cache on HTML files so browsers revalidate. Configure stale-while-revalidate for API responses. Distribute static assets through a CDN (CloudFront, Vercel Edge, Cloudflare). Invalidate CDN on deploy.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nodejs-async-patterns",
+    "name": "Enforce: Node.js Async Patterns",
+    "description": "Never block the event loop; streams for large data; AsyncLocalStorage.",
+    "template": "Never block the Node.js event loop with synchronous CPU work or *Sync I/O in request handlers. Use streams (pipeline) for large file or network data. Offload CPU work to worker_threads. Use AsyncLocalStorage for request-scoped context (tracing IDs, user sessions) instead of global variables.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nodejs-memory",
+    "name": "Enforce: Node.js Memory Management",
+    "description": "Profile heap; no unbounded caches; WeakRef for caches.",
+    "template": "Set --max-old-space-size to match your container memory limit. Profile heap with clinic.js or node --inspect before optimising. Use WeakMap/WeakRef for caches so entries can be GC-collected. Avoid unbounded arrays or Maps that grow without eviction. Monitor RSS and heap in production APM (Datadog, New Relic).",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nodejs-security",
+    "name": "Enforce: Node.js Server Security",
+    "description": "helmet middleware; rate limiting; Zod validation; no path traversal.",
+    "template": "Apply helmet() middleware to set all security headers automatically. Add express-rate-limit on all public endpoints (100 req/15min per IP as a baseline). Validate all request bodies and query params with Zod at the route level. Sanitise file path inputs — never allow user-supplied paths to reach fs.readFile without normalisation and root-confinement.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-nodejs-observability",
+    "name": "Enforce: Node.js Structured Logging & Tracing",
+    "description": "JSON structured logs (pino); correlation IDs; health+readiness endpoints.",
+    "template": "Use pino or winston for structured JSON logging — never console.log in production. Attach a correlation ID (x-request-id or auto-generated UUID) to every log entry and propagate it through AsyncLocalStorage. Expose /health (liveness) and /ready (readiness) endpoints for orchestrators. Emit metrics via Prometheus or StatsD.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-wcag-perceivable",
+    "name": "Enforce: WCAG 2.2 Perceivable (1.x)",
+    "description": "4.5:1 contrast; text alternatives; no seizure-triggering motion.",
+    "template": "Meet WCAG 2.2 Level AA Perceivable criteria: 4.5:1 contrast ratio for normal text, 3:1 for large text (18pt or 14pt bold) and UI components. Provide text alternatives for all non-text content (alt, aria-label, aria-describedby). Ensure captions for video. Avoid animations that flash more than 3 times per second. Honour prefers-reduced-motion.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-wcag-operable",
+    "name": "Enforce: WCAG 2.2 Operable (2.x)",
+    "description": "Full keyboard nav; :focus-visible; skip links; 44×44px touch targets.",
+    "template": "WCAG 2.2 Operable: every interactive element must be reachable and operable via keyboard alone. Use :focus-visible for focus indicators — never outline: none without a replacement. Add a \"Skip to main content\" link as the first focusable element. Ensure touch targets are at least 44×44px (WCAG 2.5.5). No keyboard traps.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-wcag-understandable",
+    "name": "Enforce: WCAG 2.2 Understandable (3.x)",
+    "description": "lang on <html>; error identification in forms; consistent navigation.",
+    "template": "WCAG 2.2 Understandable: set lang attribute on <html>. Identify form errors in text, not colour alone, and associate error messages with inputs using aria-describedby. Keep navigation consistent across pages. Do not change context unexpectedly on focus or input. Use plain language and define jargon.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-wcag-robust",
+    "name": "Enforce: WCAG 2.2 Robust (4.x)",
+    "description": "Valid HTML; ARIA roles match semantics; live regions for dynamic content.",
+    "template": "WCAG 2.2 Robust: produce valid HTML (validate with nu.validator.nu). ARIA roles must match the element's native semantics — never add role=\"button\" to a <div> when <button> will do. Use aria-live=\"polite\" for non-urgent dynamic updates, aria-live=\"assertive\" only for errors. Test with at least one screen reader (VoiceOver, NVDA, JAWS).",
+    "parameters": []
+  },
+  {
+    "id": "enforce-semantic-html",
+    "name": "Enforce: Semantic HTML",
+    "description": "Guidelines to avoid div-soup and improve accessibility.",
+    "template": "As a Senior UI Architect, I strictly enforce semantic HTML. Avoid generic <div> containers when <header>, <main>, <footer>, <section>, or <article> are more appropriate. Always ensure <img> tags have descriptive alt attributes and interactive elements are accessible.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-modern-css",
+    "name": "Enforce: Modern CSS Standards",
+    "description": "Guidelines for maintainable and responsive styling.",
+    "template": "Avoid using !important in CSS. Favor CSS variables and utility classes. Use relative units (rem, em, %) for font-size and layout instead of absolute px units to ensure responsive behavior and user accessibility settings are respected.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-clean-javascript",
+    "name": "Enforce: Clean JavaScript",
+    "description": "Standard JS practices for safety and readability.",
+    "template": "Never use \"var\"; use \"const\" by default and \"let\" only when reassignment is necessary. Always use strict equality (===) and avoid loose equality (==). Prefer async/await over raw promises or callbacks for better error handling and readability.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-react-best-practices",
+    "name": "Enforce: React Performance & Patterns",
+    "description": "Architectural rules for React development.",
+    "template": "Do not use array index as a \"key\" prop for dynamic lists. Never mutate state directly. Keep components small and specialized. Ensure hooks have exhaustive dependency arrays. Use component composition to avoid deep prop drilling.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-node-next-optimization",
+    "name": "Enforce: Node.js & Next.js Optimization",
+    "description": "Server-side and Next.js specific optimizations.",
+    "template": "In Node.js, never use synchronous I/O methods (.*Sync) in request handlers as they block the event loop. In Next.js, always use the <Link> component for internal navigation instead of <a> tags. Leverage Server Components for data fetching where possible to reduce client-side bundle size.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-security-best-practices",
+    "name": "Enforce: Security Best Practices",
+    "description": "Senior Architect security standards.",
+    "template": "Security is non-negotiable. Never use eval(). Avoid dangerouslySetInnerHTML unless absolutely necessary and sanitized. Always add rel=\"noopener noreferrer\" to target=\"_blank\" links. Use HTTP-only cookies and implement CSRF protection. Regularly audit dependencies for vulnerabilities.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-performance-nfrs",
+    "name": "Enforce: Performance & NFRs",
+    "description": "Non-functional requirements for high-performance apps.",
+    "template": "Target 100% Lighthouse scores. Use modern, lightweight libraries (e.g., date-fns over moment). Optimize images using Next.js <Image> or modern formats. Implement proper cleanup in useEffect (clearInterval/removeEventListener) to prevent memory leaks. Use Web Workers for heavy computations.",
+    "parameters": []
+  },
+  {
+    "id": "enforce-accessibility-standards",
+    "name": "Enforce: Universal Accessibility",
+    "description": "Guidelines for 100% accessibility score.",
+    "template": "Every user matters. Ensure 100% accessibility by using semantic HTML, ARIA labels for non-text elements, and ensuring high color contrast. All interactive elements must be keyboard-accessible. Test with screen readers and follow WCAG 2.2 Level AA standards.",
+    "parameters": []
+  }
+]

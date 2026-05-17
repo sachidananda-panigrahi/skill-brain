@@ -1,0 +1,91 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "SkillBrain: Auto-Start MCP Server",
+      "type": "shell",
+      "command": "node",
+      "args": ["${workspaceFolder}/bin/skill-brain-vscode.js"],
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "group": "skillbrain"
+      },
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^ERROR(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "SkillBrain MCP starting",
+          "endsPattern": "SkillBrain MCP ready"
+        }
+      }
+    },
+    {
+      "label": "SkillBrain: Start HTTP Dashboard",
+      "type": "shell",
+      "command": "node index.js",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Starting.*",
+          "endsPattern": "^.*Server running at.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "skillbrain"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "SkillBrain: Run E2E Tests",
+      "type": "shell",
+      "command": "node test_e2e.js",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "skillbrain"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "SkillBrain: Scan Current Project",
+      "type": "shell",
+      "command": "node bin/skill-brain.js scan .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "skillbrain"
+      }
+    }
+  ]
+}

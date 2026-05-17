@@ -1,0 +1,38 @@
+[
+  {
+    "id": "dg-ci-cd-pipeline-builder",
+    "name": "CI/CD Pipeline Builder — Stack Detection + Pipeline Gen",
+    "description": "Detect project stack and generate a complete CI/CD pipeline. Covers build, test, lint, security scan, and deploy stages for GitHub Actions.",
+    "category": "enforcement",
+    "domain": "DevOps & Git",
+    "severity": "high",
+    "source": "GitHub Actions: CI/CD best practices",
+    "tags": ["cicd", "pipeline", "github-actions", "devops", "automation", "build", "deploy", "lint", "security"],
+    "template": "## CI/CD Pipeline Builder\n\n### Stack Detection\nInspect project files to determine pipeline stages:\n```bash\n# Node.js\n[[ -f package.json ]] && echo \"node\"\n# Python\n[[ -f requirements.txt || -f pyproject.toml ]] && echo \"python\"\n# Docker\n[[ -f Dockerfile ]] && echo \"docker\"\n# Has tests\n[[ -d __tests__ || -d tests || -f jest.config.* ]] && echo \"tests\"\n```\n\n### Node.js Pipeline Template\n```yaml\nname: CI\non:\n  push: { branches: [main, develop] }\n  pull_request: { branches: [main] }\n\njobs:\n  ci:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: '20', cache: 'pnpm' }\n      - run: pnpm install --frozen-lockfile\n      - run: pnpm run lint\n      - run: pnpm run typecheck\n      - run: pnpm test -- --coverage\n      - name: Security scan\n        uses: semgrep/semgrep-action@v1\n        with: { config: 'p/javascript p/owasp-top-ten' }\n      - name: Upload coverage\n        uses: codecov/codecov-action@v4\n\n  deploy:\n    needs: ci\n    if: github.ref == 'refs/heads/main'\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pnpm install --frozen-lockfile\n      - run: pnpm build\n      # Add your deploy step here\n```\n\n### Required Secrets (add to repo settings)\n```\nNODE_AUTH_TOKEN   # npm publish\nCODECOV_TOKEN     # coverage upload\nDEPLOY_KEY        # deploy target\n```\n\n### Branch Protection Rules\nProtect `main`:\n- Require status checks: ci\n- Require up-to-date branches\n- Dismiss stale reviews\n- Block force push\n\n### Checklist\n- [ ] Pipeline runs on PR and push to main\n- [ ] Lint + typecheck before tests\n- [ ] Tests run with coverage report\n- [ ] Security scan in CI\n- [ ] Deploy only triggers on main after all checks pass\n- [ ] Secrets stored in repo settings, not in workflow file\n- [ ] Branch protection rules configured",
+    "parameters": []
+  },
+  {
+    "id": "dg-github-ops",
+    "name": "GitHub Ops — PR/Issue Management",
+    "description": "Automate PR creation, issue management, and GitHub workflow operations using gh CLI. Covers labels, milestones, reviewers, and PR descriptions.",
+    "category": "pattern",
+    "domain": "DevOps & Git",
+    "severity": "medium",
+    "source": "GitHub CLI: gh command reference",
+    "tags": ["github", "pr", "issues", "workflow", "automation", "gh-cli", "labels", "milestones"],
+    "template": "## GitHub Ops with gh CLI\n\n### Create PR with full description\n```bash\ngh pr create \\\n  --title \"feat: add user authentication\" \\\n  --body \"$(cat <<'EOF'\n## Summary\n- Implement JWT-based auth\n- Add login/logout endpoints\n- Protect dashboard route\n\n## Test plan\n- [ ] Login with valid credentials succeeds\n- [ ] Login with invalid credentials returns 401\n- [ ] Protected route redirects unauthenticated users\n- [ ] JWT refresh works after expiry\nEOF\n)\" \\\n  --reviewer @org/team-name \\\n  --label \"feature,needs-review\"\n```\n\n### Issue triage\n```bash\n# List open issues by label\ngh issue list --label \"bug\" --state open\n\n# Create issue from template\ngh issue create --title \"Bug: login fails on Safari\" \\\n  --body \"Steps to reproduce...\" \\\n  --label \"bug\" --assignee @me\n\n# Close issue and link PR\ngh issue close 42 --comment \"Fixed in #57\"\n```\n\n### PR review workflow\n```bash\n# Check PR status\ngh pr status\n\n# View PR diff\ngh pr diff 57\n\n# Approve and merge\ngh pr review 57 --approve --body \"LGTM\"\ngh pr merge 57 --squash --delete-branch\n```\n\n### Release management\n```bash\n# Create release from tag\ngh release create v1.2.0 \\\n  --title \"v1.2.0 — Performance improvements\" \\\n  --notes \"$(git log --oneline v1.1.0..v1.2.0)\" \\\n  --target main\n```\n\n### Checklist\n- [ ] PR title follows conventional commits format\n- [ ] PR description has summary + test plan\n- [ ] Labels applied (feature/bug/chore)\n- [ ] Reviewer assigned\n- [ ] Issue linked in PR body (closes #N)\n- [ ] Branch deleted after merge",
+    "parameters": []
+  },
+  {
+    "id": "dg-git-worktrees",
+    "name": "Git Worktrees — Isolated Parallel Dev Branches",
+    "description": "Use git worktrees to work on multiple branches simultaneously without stashing or switching. Each worktree is a separate working directory sharing the same repo.",
+    "category": "pattern",
+    "domain": "DevOps & Git",
+    "severity": "medium",
+    "source": "Git Documentation: git-worktree",
+    "tags": ["git", "worktrees", "parallel", "branches", "isolation", "context-switching", "productivity"],
+    "template": "## Git Worktrees\n\n### Core Concept\nWorktrees = multiple working directories → one repo.\nNo stash, no branch switching, no lost context.\n\n### Setup\n```bash\n# List existing worktrees\ngit worktree list\n\n# Add worktree for a new feature branch\ngit worktree add ../feature-auth feature/auth\n# → creates /project-feature-auth/ checked out on feature/auth\n\n# Add worktree for existing branch\ngit worktree add ../hotfix-login hotfix/login-crash\n\n# Add worktree with a new branch\ngit worktree add -b feature/payments ../payments-wt origin/main\n```\n\n### Workflow\n```bash\n# Main feature work\ncd /project\ngit checkout feature/dashboard\n\n# Meanwhile, urgent hotfix in parallel\ncd /project-hotfix\n# full working tree — run tests, edit files, commit independently\ngit commit -am \"fix: prevent null pointer in login\"\ngit push origin hotfix/login-crash\n\n# Back to feature — zero context loss\ncd /project\n```\n\n### Cleanup\n```bash\n# Remove worktree (safe — doesn't delete branch)\ngit worktree remove ../project-hotfix\n\n# Force remove if dirty\ngit worktree remove --force ../project-hotfix\n\n# Prune stale worktree metadata\ngit worktree prune\n```\n\n### When to use\n- Parallel feature branches without constant branch switching\n- Hotfix while mid-feature\n- Reviewing a PR while keeping local changes intact\n- Running tests on multiple branches simultaneously\n\n### Limitations\n- Cannot check out the same branch in two worktrees\n- `node_modules/` not shared — run `npm install` in each worktree\n- IDE may not support multiple worktrees in one window\n\n### Checklist\n- [ ] Worktrees in sibling directories (not nested in repo)\n- [ ] `git worktree prune` run periodically\n- [ ] Dependencies installed in each worktree independently\n- [ ] Worktrees removed when branch merged",
+    "parameters": []
+  }
+]

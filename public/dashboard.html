@@ -1,544 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillBrain Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillBrain — AI Skills Server</title>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
   <style>
-    :root {
-      --sidebar-width: 280px;
-      --bg-color: #f8f9fa;
-      --card-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    body {
-      background-color: var(--bg-color);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
-    .sidebar {
-      width: var(--sidebar-width);
-      height: 100vh;
-      position: fixed;
-      left: 0;
-      top: 0;
-      background: #212529;
-      color: white;
-      padding-top: 2rem;
-      z-index: 1000;
-    }
-    .main-content {
-      margin-left: var(--sidebar-width);
-      padding: 2rem;
-    }
-    .nav-link {
-      color: rgba(255,255,255,0.7);
-      padding: 0.8rem 1.5rem;
-      transition: all 0.2s;
-    }
-    .nav-link:hover, .nav-link.active {
-      color: white;
-      background: rgba(255,255,255,0.1);
-    }
-    .nav-link i {
-      margin-right: 10px;
-    }
-    .skill-card {
-      background: white;
-      border: none;
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-      transition: transform 0.2s;
-      height: 100%;
-    }
     .skill-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-1px);
     }
-    .skill-badge {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 0.4rem 0.8rem;
-      border-radius: 20px;
+
+    .fade-in {
+      animation: fadeIn .25s ease;
     }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .5
+      }
+    }
+
     .template-box {
-      background: #f1f3f5;
-      border-radius: 8px;
-      padding: 1rem;
-      font-family: 'SFMono-Regular', Consolas, monospace;
-      font-size: 0.9rem;
-      max-height: 150px;
+      max-height: 7rem;
       overflow-y: auto;
     }
-    .search-container {
-      position: relative;
+
+    ::-webkit-scrollbar {
+      width: 4px;
     }
-    .search-container i {
-      position: absolute;
-      left: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6c757d;
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
-    .search-input {
-      padding-left: 45px;
-      border-radius: 25px;
-      border: 1px solid #dee2e6;
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 2px;
     }
-    .stat-card {
-      background: white;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      box-shadow: var(--card-shadow);
+
+    .sev-CRITICAL {
+      border-left-color: #dc2626;
+      background: #fef2f2;
     }
-    .stat-card h3 {
-      font-size: 2rem;
-      margin-bottom: 0;
+
+    .sev-HIGH {
+      border-left-color: #ea580c;
+      background: #fff7ed;
+    }
+
+    .sev-MEDIUM {
+      border-left-color: #d97706;
+      background: #fffbeb;
+    }
+
+    .sev-LOW {
+      border-left-color: #3b82f6;
+      background: #eff6ff;
+    }
+
+    /* Documentation Styles */
+    #docViewer {
+      scroll-behavior: smooth;
+    }
+
+    .prose :where(pre):not(:where([class~="not-prose"] *)) {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      border-radius: 0.75rem;
+      border: 1px solid #334155;
+    }
+
+    .prose :where(code):not(:where([class~="not-prose"] *)) {
+      background-color: #f1f5f9;
+      color: #475569;
+      padding: 0.125rem 0.25rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      font-size: 0.875em;
+    }
+
+    .prose :where(pre code):not(:where([class~="not-prose"] *)) {
+      background-color: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .prose h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 0.5rem;
+    }
+
+    .prose h2 {
+      font-size: 1.5rem;
       font-weight: 700;
+      color: #1e293b;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
     }
-    .stat-card p {
-      color: #6c757d;
-      margin-bottom: 0;
+
+    .prose h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.5rem;
     }
-    #loader {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255,255,255,0.8);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
+
+    .prose p {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      line-height: 1.75;
+      color: #475569;
     }
-    .btn-rounded {
-      border-radius: 25px;
+
+    .prose ul,
+    .prose ol {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
       padding-left: 1.5rem;
-      padding-right: 1.5rem;
+    }
+
+    .prose li {
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .prose blockquote {
+      border-left: 4px solid #e2e8f0;
+      padding-left: 1rem;
+      font-style: italic;
+      color: #64748b;
+      margin: 1.5rem 0;
+    }
+
+    .prose table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.875rem;
+    }
+
+    .prose th {
+      background-color: #f8fafc;
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 2px solid #e2e8f0;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .prose td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: #64748b;
+    }
+
+    .prose tr:hover td {
+      background-color: #f8fafc;
+    }
+
+    .code-block-wrapper {
+      position: relative;
+      group: hover;
+    }
+
+    .doc-copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      opacity: 0;
+      transition: all 0.2s;
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .code-block-wrapper:hover .doc-copy-btn {
+      opacity: 1;
+    }
+
+    .doc-copy-btn:hover {
+      background: #475569;
+      border-color: #64748b;
+    }
+
+    .doc-copy-btn.copied {
+      background: #059669;
+      border-color: #059669;
+      color: white;
+      opacity: 1;
     }
   </style>
 </head>
-<body>
 
-  <div id="loader">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
+<body class="bg-zinc-50 font-sans text-slate-800 min-h-screen">
+
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+    <aside class="w-64 bg-slate-900 flex-shrink-0 flex flex-col h-full overflow-y-auto">
+      <div class="px-6 py-5 flex items-center gap-3 border-b border-slate-700">
+        <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+        </div>
+        <span class="text-white font-bold text-lg">SkillBrain</span>
+      </div>
+
+      <div id="healthPill"
+        class="mx-4 mt-4 px-3 py-2 rounded-xl bg-slate-800 flex items-center gap-2 text-xs text-slate-400">
+        <span id="healthDot" class="w-2 h-2 rounded-full bg-slate-500 pulse-dot"></span>
+        <span id="healthText">Connecting…</span>
+      </div>
+
+      <div class="px-4 mt-4">
+        <label class="text-xs text-slate-500 font-medium uppercase tracking-widest block mb-1">Project</label>
+        <select id="projectSelect" onchange="switchProject()"
+          class="w-full bg-slate-800 text-slate-200 text-sm rounded-lg border border-slate-700 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand-500">
+          <option value="">— Global —</option>
+        </select>
+      </div>
+
+      <nav class="mt-6 flex-1 px-2 space-y-1">
+        <button onclick="navigateToSection('overview')" data-nav="overview"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+          Skills Overview
+        </button>
+        <button onclick="navigateToSection('search')" data-nav="search"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Semantic Search
+        </button>
+        <button onclick="navigateToSection('scan')" data-nav="scan"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          Scan Project
+        </button>
+        <button onclick="navigateToSection('review')" data-nav="review"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Code Review
+        </button>
+        <button onclick="navigateToSection('add')" data-nav="add"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Skill
+        </button>
+        <button onclick="navigateToSection('docs')" data-nav="docs"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Documentation
+        </button>
+      </nav>
+
+      <div class="px-4 pb-5 mt-4">
+        <button onclick="navigateToSection('add')"
+          class="w-full bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+          + Add Skill
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── Main ─────────────────────────────────────────────────────── -->
+    <main class="flex-1 overflow-y-auto">
+      <div id="sectionMount" class="min-h-full">
+        <div class="p-8 text-sm text-slate-400">Loading section…</div>
+      </div>
+
+    </main>
   </div>
 
-  <div class="sidebar">
-    <div class="px-4 mb-4">
-      <h4 class="mb-0"><i class="bi bi-cpu-fill text-primary"></i> SkillBrain</h4>
-      <small class="text-muted">AI Knowledge Server</small>
-    </div>
-    <nav class="nav flex-column">
-      <a class="nav-link active" href="#" data-section="overview"><i class="bi bi-grid-1x2-fill"></i> Overview</a>
-      <a class="nav-link" href="#" data-section="scan"><i class="bi bi-search"></i> Scan Project</a>
-      <a class="nav-link" href="#" data-section="add"><i class="bi bi-plus-circle-fill"></i> Add Skill</a>
-      <a class="nav-link" href="/mcp" target="_blank"><i class="bi bi-plug-fill"></i> MCP Discovery</a>
-    </nav>
-  </div>
-
-  <div class="main-content">
-    <!-- Overview Section -->
-    <div id="section-overview" class="dashboard-section">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Dashboard Overview</h2>
-        <div class="d-flex gap-3 w-50 justify-content-end">
-          <div class="search-container flex-grow-1">
-            <i class="bi bi-search"></i>
-            <input type="text" id="skillSearch" class="form-control search-input" placeholder="Search skills...">
-          </div>
-          <select id="projectSelector" class="form-select border-radius-25" style="width: 200px; border-radius: 25px;">
-            <option value="">Global Skills</option>
-          </select>
+  <!-- Delete modal -->
+  <div id="deleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-900">Delete skill?</p>
+          <p class="text-sm text-slate-500" id="deleteSkillName"></p>
         </div>
       </div>
-
-      <div class="row g-4 mb-5">
-        <div class="col-md-3">
-          <div class="stat-card">
-            <h3 id="stat-total">0</h3>
-            <p>Total Skills</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <h3 id="stat-projects" class="text-primary">0</h3>
-            <p>Project Contexts</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <h3 id="stat-libraries" class="text-success">0</h3>
-            <p>Libraries</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <h3 id="stat-patterns" class="text-warning">0</h3>
-            <p>Patterns</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-4" id="skillsGrid">
-        <!-- Skills cards will be injected here -->
-      </div>
-    </div>
-
-    <!-- Scan Section -->
-    <div id="section-scan" class="dashboard-section d-none">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-4">
-          <h3><i class="bi bi-search text-primary me-2"></i> Scan New Project</h3>
-          <p class="text-muted mb-4">Enter the absolute path to a project to automatically extract skills, patterns, and architectural insights.</p>
-          
-          <div class="mb-4">
-            <label class="form-label">Project Absolute Path</label>
-            <div class="input-group">
-              <span class="input-group-text bg-white border-end-0"><i class="bi bi-folder2-open"></i></span>
-              <input type="text" id="scanPath" class="form-control border-start-0 py-2" placeholder="/Users/name/projects/my-app">
-              <button id="scanBtn" class="btn btn-primary px-4">Start Scan</button>
-            </div>
-          </div>
-          
-          <div id="scanFeedback" class="alert d-none"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add/Edit Section -->
-    <div id="section-add" class="dashboard-section d-none">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-4">
-          <h3 id="formTitle"><i class="bi bi-plus-circle-fill text-primary me-2"></i> Add New Skill</h3>
-          <p class="text-muted mb-4">Manually create a new skill or edit an existing one.</p>
-
-          <form id="skillForm">
-            <input type="hidden" id="skillId">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Skill Name</label>
-                <input type="text" id="skillName" class="form-control py-2" placeholder="e.g., React Component Design" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Description</label>
-                <input type="text" id="skillDescription" class="form-control py-2" placeholder="Brief description of the skill">
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-bold">Template</label>
-                <textarea id="skillTemplate" class="form-control" rows="5" placeholder="Define the AI prompt template..." required></textarea>
-                <div class="form-text mt-2">Use <code>{{param}}</code> for dynamic placeholders.</div>
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-bold">Parameters</label>
-                <input type="text" id="skillParams" class="form-control py-2" placeholder="param1, param2 (comma separated)">
-              </div>
-              <div class="col-12 mt-4">
-                <button type="button" id="saveSkillBtn" class="btn btn-primary btn-rounded"><i class="bi bi-save me-2"></i> Save Skill</button>
-                <button type="button" id="cancelEditBtn" class="btn btn-outline-secondary btn-rounded ms-2">Cancel</button>
-              </div>
-            </div>
-          </form>
-        </div>
+      <div class="flex gap-3">
+        <button onclick="confirmDelete()"
+          class="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Delete</button>
+        <button onclick="closeDeleteModal()"
+          class="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-colors">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal -->
-  <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0">
-        <div class="modal-body p-4 text-center">
-          <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
-          <h4 class="mt-3">Are you sure?</h4>
-          <p class="text-muted">This action cannot be undone. This skill will be permanently removed.</p>
-          <div class="d-flex justify-content-center gap-2 mt-4">
-            <button type="button" class="btn btn-light btn-rounded px-4" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" id="confirmDeleteBtn" class="btn btn-danger btn-rounded px-4">Delete Skill</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    const API = '/api/skills';
-    let allSkills = [];
-    let currentDeleteId = null;
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-
-    // --- Navigation Logic ---
-    document.querySelectorAll('.nav-link[data-section]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const section = e.target.closest('.nav-link').dataset.section;
-        switchSection(section);
-      });
-    });
-
-    function switchSection(sectionId) {
-      document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('d-none'));
-      document.getElementById(`section-${sectionId}`).classList.remove('d-none');
-      
-      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-      document.querySelector(`.nav-link[data-section="${sectionId}"]`)?.classList.add('active');
-
-      if (sectionId === 'add') {
-        if (!document.getElementById('skillId').value) {
-          document.getElementById('formTitle').innerHTML = '<i class="bi bi-plus-circle-fill text-primary me-2"></i> Add New Skill';
-        }
-      }
-    }
-
-    // --- Data Fetching ---
-    async function refresh() {
-      showLoader(true);
-      try {
-        const project = document.getElementById('projectSelector').value;
-        const res = await fetch(`${API}${project ? '?project=' + project : ''}`);
-        allSkills = await res.json();
-        
-        await refreshProjects();
-        renderStats();
-        renderSkills(allSkills);
-      } catch (err) {
-        console.error('Failed to fetch skills:', err);
-      } finally {
-        showLoader(false);
-      }
-    }
-
-    async function refreshProjects() {
-      try {
-        const res = await fetch('/api/skills/projects');
-        const projects = await res.json();
-        const selector = document.getElementById('projectSelector');
-        const current = selector.value;
-        
-        // Keep "Global Skills" option
-        selector.innerHTML = '<option value="">Global Skills</option>';
-        projects.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p;
-          opt.textContent = p;
-          selector.appendChild(opt);
-        });
-        
-        selector.value = current;
-        document.getElementById('stat-projects').innerText = projects.length;
-      } catch (err) {
-        console.error('Failed to fetch projects:', err);
-      }
-    }
-
-    document.getElementById('projectSelector').addEventListener('change', refresh);
-
-    function renderStats() {
-      document.getElementById('stat-total').innerText = allSkills.length;
-      // Projects count is now handled in refreshProjects
-      document.getElementById('stat-libraries').innerText = allSkills.filter(s => s.id.startsWith('lib-')).length;
-      document.getElementById('stat-patterns').innerText = allSkills.filter(s => s.id.startsWith('pattern-') || s.id.startsWith('architect-insights-')).length;
-    }
-
-    function renderSkills(skills) {
-      const grid = document.getElementById('skillsGrid');
-      grid.innerHTML = '';
-      
-      if (skills.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center py-5"><i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i><p class="mt-2 text-muted">No skills found. Start by scanning a project.</p></div>';
-        return;
-      }
-
-      skills.forEach(s => {
-        const type = getSkillType(s);
-        const card = document.createElement('div');
-        card.className = 'col-md-6 col-lg-4';
-        card.innerHTML = `
-          <div class="card skill-card">
-            <div class="card-body p-4 d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-start mb-3">
-                <span class="skill-badge bg-${type.color} text-white">${type.label}</span>
-                <div class="dropdown">
-                  <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                  <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><a class="dropdown-item editBtn" href="#" data-id="${s.id}"><i class="bi bi-pencil me-2"></i> Edit</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger deleteBtn" href="#" data-id="${s.id}"><i class="bi bi-trash me-2"></i> Delete</a></li>
-                  </ul>
-                </div>
-              </div>
-              <h5 class="card-title mb-2 text-dark fw-bold">${s.name}</h5>
-              <p class="card-text text-muted small mb-3">${s.description || 'No description provided.'}</p>
-              <div class="template-box mb-3 flex-grow-1">
-                ${escapeHtml(s.template)}
-              </div>
-              <div class="d-flex align-items-center justify-content-between mt-auto">
-                <small class="text-muted"><i class="bi bi-tag me-1"></i> ${s.id}</small>
-                ${s.parameters?.length ? `<span class="badge bg-light text-dark border">${s.parameters.length} params</span>` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-
-      attachEventListeners();
-    }
-
-    function getSkillType(skill) {
-      if (skill.id.startsWith('project-')) return { label: 'Project', color: 'primary' };
-      if (skill.id.startsWith('lib-')) return { label: 'Library', color: 'success' };
-      if (skill.id.startsWith('pattern-')) return { label: 'Pattern', color: 'warning' };
-      if (skill.id.startsWith('architect-insights-')) return { label: 'Architect', color: 'info' };
-      if (skill.id.startsWith('enforce-')) return { label: 'Enforcement', color: 'danger' };
-      if (skill.id.startsWith('anti-pattern-report-')) return { label: 'Report', color: 'dark' };
-      return { label: 'Custom', color: 'secondary' };
-    }
-
-    function escapeHtml(text) {
-      return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    function showLoader(show) {
-      document.getElementById('loader').style.display = show ? 'flex' : 'none';
-    }
-
-    // --- Search Logic ---
-    document.getElementById('skillSearch').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allSkills.filter(s => 
-        s.name.toLowerCase().includes(term) || 
-        s.id.toLowerCase().includes(term) || 
-        s.template.toLowerCase().includes(term)
-      );
-      renderSkills(filtered);
-    });
-
-    // --- Action Handlers ---
-    function attachEventListeners() {
-      document.querySelectorAll('.editBtn').forEach(btn => {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          const id = e.target.closest('[data-id]').dataset.id;
-          const skill = allSkills.find(s => s.id === id);
-          if (skill) {
-            document.getElementById('skillId').value = skill.id;
-            document.getElementById('skillName').value = skill.name;
-            document.getElementById('skillDescription').value = skill.description || '';
-            document.getElementById('skillTemplate').value = skill.template;
-            document.getElementById('skillParams').value = (skill.parameters || []).map(p => p.name).join(', ');
-            
-            document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-fill text-warning me-2"></i> Edit Skill';
-            switchSection('add');
-          }
-        };
-      });
-
-      document.querySelectorAll('.deleteBtn').forEach(btn => {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          currentDeleteId = e.target.closest('[data-id]').dataset.id;
-          deleteModal.show();
-        };
-      });
-    }
-
-    document.getElementById('confirmDeleteBtn').onclick = async () => {
-      if (!currentDeleteId) return;
-      deleteModal.hide();
-      showLoader(true);
-      const project = document.getElementById('projectSelector').value;
-      await fetch(`${API}/${currentDeleteId}${project ? '?project=' + project : ''}`, { method: 'DELETE' });
-      await refresh();
-      currentDeleteId = null;
-    };
-
-    document.getElementById('saveSkillBtn').onclick = async () => {
-      const id = document.getElementById('skillId').value;
-      const project = document.getElementById('projectSelector').value;
-      const skill = {
-        name: document.getElementById('skillName').value,
-        description: document.getElementById('skillDescription').value,
-        template: document.getElementById('skillTemplate').value,
-        parameters: document.getElementById('skillParams').value
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean)
-          .map(name => ({ name, description: '' }))
-      };
-
-      if (!skill.name || !skill.template) return alert('Name and template required');
-
-      showLoader(true);
-      if (id) {
-        await fetch(`${API}/${id}${project ? '?project=' + project : ''}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(skill)
-        });
-      } else {
-        await fetch(`${API}${project ? '?project=' + project : ''}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(skill)
-        });
-      }
-      resetForm();
-      await refresh();
-      switchSection('overview');
-    };
-
-    document.getElementById('cancelEditBtn').onclick = () => {
-      resetForm();
-      switchSection('overview');
-    };
-
-    function resetForm() {
-      document.getElementById('skillId').value = '';
-      document.getElementById('skillName').value = '';
-      document.getElementById('skillDescription').value = '';
-      document.getElementById('skillTemplate').value = '';
-      document.getElementById('skillParams').value = '';
-      document.getElementById('skillForm').reset();
-    }
-
-    // --- Scan Logic ---
-    document.getElementById('scanBtn').onclick = async () => {
-      const path = document.getElementById('scanPath').value.trim();
-      if (!path) return alert('Please enter a project path');
-      
-      const feedback = document.getElementById('scanFeedback');
-      feedback.classList.remove('d-none', 'alert-success', 'alert-danger');
-      feedback.classList.add('alert-info');
-      feedback.innerText = 'Scanning project... this may take a moment.';
-      
-      showLoader(true);
-      try {
-        const res = await fetch('/api/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path })
-        });
-        const data = await res.json();
-        
-        feedback.classList.replace('alert-info', 'alert-success');
-        feedback.innerHTML = `<strong>Success!</strong> ${data.message}`;
-        await refresh();
-      } catch (err) {
-        feedback.classList.replace('alert-info', 'alert-danger');
-        feedback.innerText = 'Scan failed: ' + err.message;
-      } finally {
-        showLoader(false);
-      }
-    };
-
-    // Initial load
-    refresh();
-  </script>
+  <script src="/dashboard.js"></script>
 </body>
+
 </html>

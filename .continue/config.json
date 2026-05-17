@@ -1,0 +1,10 @@
+{
+  "mcpServers": [
+    {
+      "name": "skill-brain",
+      "transport": "http",
+      "url": "http://localhost:3000/mcp",
+      "description": "skill-brain RAG skills engine"
+    }
+  ]
+}

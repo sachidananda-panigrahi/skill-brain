@@ -1,0 +1,74 @@
+[
+  {
+    "id": "security-owasp-top10",
+    "name": "Security: OWASP Top 10 & Web App Security",
+    "description": "Prevent common web vulnerabilities by implementing OWASP Top 10 mitigation strategies.",
+    "category": "enforcement",
+    "domain": "Security & Vulnerabilities",
+    "template": "OWASP Top 10 Prevention:\n\n1. **A01: Broken Access Control**\n   - Use CODEOWNERS for code review enforcement\n   - Implement role-based access control (RBAC)\n   - Validate permissions on every API endpoint\n   - Never trust client-side auth; verify server-side\n   - Pattern: if (!user.hasRole('admin')) return 401;\n\n2. **A02: Cryptographic Failures**\n   - Use HTTPS everywhere (enforce with HSTS header)\n   - Never log passwords or tokens\n   - Use bcrypt/argon2 for password hashing (not SHA256)\n   - Rotate secrets regularly; use secret managers\n   - Pattern: await bcrypt.compare(password, hash)\n\n3. **A03: Injection**\n   - Prevent SQL Injection: Use parameterized queries\n   - Prevent Command Injection: Never exec() user input\n   - Prevent XSS: Escape HTML output, use DOMPurify for rich text\n   - Validate ALL user input: whitelist, not blacklist\n   - Pattern: sql.query('SELECT * FROM users WHERE id = ?', [userId])\n\n4. **A04: Insecure Design**\n   - Design threat models before implementation\n   - Document security requirements in PRs\n   - Use security checklists in code review\n   - Threat modeling: STRIDE, attack trees\n\n5. **A05: Security Misconfiguration**\n   - Disable debug mode in production\n   - Remove unnecessary HTTP methods (HEAD, TRACE)\n   - Set security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options\n   - Use dependabot/snyk for dependency scanning\n\n6. **A06: Vulnerable & Outdated Components**\n   - Run npm audit weekly; fix HIGH/CRITICAL issues\n   - Use Snyk or Dependabot in CI/CD\n   - Maintain dependency update schedule\n   - Monitor CVE databases for known vulnerabilities\n\n7. **A07: Authentication Failures**\n   - Implement multi-factor authentication (MFA)\n   - Use secure password policies: min 12 chars, complexity\n   - Implement rate limiting: max 5 failed logins\n   - Use JWT with short expiry (15 min) + refresh tokens\n\n8. **A08: Software & Data Integrity Failures**\n   - Sign release artifacts\n   - Verify third-party package integrity\n   - Use SRI (Subresource Integrity) for CDN scripts\n   - Implement CI/CD pipeline signing\n\n9. **A09: Logging & Monitoring Failures**\n   - Log all security-relevant events (login, auth failures, data access)\n   - Monitor for suspicious patterns\n   - Set up alerts for anomalies\n   - Retain logs for 90+ days\n\n10. **A10: Server-Side Request Forgery (SSRF)**\n    - Validate and whitelist URLs before requests\n    - Disable redirects to internal IPs\n    - Use allowlists for outbound requests\n    - Monitor outbound traffic for anomalies",
+    "severity": "critical",
+    "source": "GitHub: OWASP-Top-10, owasp-cheat-sheet",
+    "tags": ["security", "owasp", "vulnerabilities"],
+    "parameters": []
+  },
+  {
+    "id": "security-csp-headers",
+    "name": "Security: Content Security Policy & Security Headers",
+    "description": "Implement comprehensive security headers to protect against XSS, clickjacking, and injection attacks.",
+    "category": "enforcement",
+    "domain": "Security & Vulnerabilities",
+    "template": "Security Headers Best Practices:\n\n1. **Content Security Policy (CSP)**\n   - Use nonce-based CSP (not 'unsafe-inline')\n   - Directive: default-src 'self'\n   - Directive: script-src 'self' 'nonce-{RANDOM}' https://trusted.com\n   - Directive: style-src 'self' 'nonce-{RANDOM}' https://fonts.googleapis.com\n   - Prevent inline script execution entirely\n   - Pattern: Generate unique nonce per request in middleware\n\n2. **HTTP Security Headers**\n   - Strict-Transport-Security: max-age=31536000; includeSubDomains; preload\n   - X-Content-Type-Options: nosniff (prevent MIME sniffing)\n   - X-Frame-Options: DENY (prevent clickjacking)\n   - X-XSS-Protection: 1; mode=block (legacy; CSP is preferred)\n   - Referrer-Policy: strict-origin-when-cross-origin\n\n3. **Permissions Policy (Feature Policy)**\n   - Directive: camera=(), microphone=() (disable unused features)\n   - Directive: geolocation=() (restrict location access)\n   - Directive: payment=() (restrict payment APIs)\n   - Prevents abuse of browser APIs\n\n4. **Cookie Security**\n   - Set HttpOnly flag (prevents JS access)\n   - Set Secure flag (HTTPS only)\n   - Set SameSite=Strict (prevents CSRF)\n   - Pattern: Set-Cookie: sessionId=abc; HttpOnly; Secure; SameSite=Strict\n\n5. **Implementation in Next.js**\n   - Use middleware.ts to set headers\n   - Pattern: response.headers.set('X-Frame-Options', 'DENY')\n   - Generate nonce per request in layout/middleware\n   - Test CSP in Report-Only mode first",
+    "severity": "critical",
+    "source": "GitHub: OWASP CSP Cheat Sheet, MDN security headers",
+    "tags": ["security", "headers", "csp"],
+    "parameters": []
+  },
+  {
+    "id": "security-input-validation",
+    "name": "Security: Input Validation & Sanitization",
+    "description": "Prevent injection attacks and malformed data through comprehensive input validation.",
+    "category": "enforcement",
+    "domain": "Security & Vulnerabilities",
+    "template": "Input Validation Best Practices:\n\n1. **Server-Side Validation (Mandatory)**\n   - Never trust client-side validation alone\n   - Use Zod, Yup, or io-ts for schema validation\n   - Validate shape, type, length, format\n   - Reject malformed requests early\n   - Pattern: const schema = z.object({ email: z.string().email(), age: z.number().min(0).max(120) })\n\n2. **Request Body Validation**\n   - Define strict request schemas\n   - Reject additional unexpected fields (strict mode)\n   - Validate file uploads: type, size, virus scan\n   - Pattern: express.json({ limit: '10mb' }); // with request size limit\n\n3. **URL & Query Parameter Validation**\n   - Whitelist allowed parameters\n   - Validate format: UUID, slug, numeric IDs\n   - Prevent directory traversal: validate path segments\n   - Pattern: const id = z.string().uuid().parse(req.params.id)\n\n4. **HTML & Rich Text Sanitization**\n   - Use DOMPurify for user-generated HTML\n   - Never use dangerouslySetInnerHTML without sanitization\n   - Whitelist allowed tags and attributes\n   - Pattern: import DOMPurify from 'isomorphic-dompurify'; const clean = DOMPurify.sanitize(userHTML)\n\n5. **Error Messages**\n   - Never reveal implementation details in errors\n   - Log detailed errors server-side\n   - Return generic messages to clients\n   - Pattern: throw new ApiError('Invalid input', 400); // don't expose DB schema\n\n6. **File Upload Security**\n   - Validate MIME type (check magic bytes, not extension)\n   - Scan uploads with ClamAV or VirusTotal\n   - Store in secure location outside web root\n   - Generate random filename; discard user filename\n   - Pattern: crypto.randomBytes(16).toString('hex') + '.jpg'",
+    "severity": "critical",
+    "source": "GitHub: owasp-input-validation, zod, dompurify",
+    "tags": ["security", "validation", "sanitization"],
+    "parameters": []
+  },
+  {
+    "id": "security-vulnerability-scanning",
+    "name": "Security: Vulnerability Scanning & Dependency Management",
+    "description": "Establish automated vulnerability scanning and dependency management to prevent supply chain attacks.",
+    "category": "enforcement",
+    "domain": "Security & Vulnerabilities",
+    "template": "Vulnerability Management:\n\n1. **Dependency Auditing**\n   - Run npm audit in CI/CD pipeline\n   - Integrate Snyk, Dependabot, or WhiteSource\n   - Fail build on HIGH/CRITICAL vulnerabilities\n   - Review and merge security updates weekly\n   - Pattern: npm audit --audit-level=high\n\n2. **Automated Updates**\n   - Enable Dependabot/GitHub security updates\n   - Auto-approve patch updates (v1.2.3 → v1.2.4)\n   - Require review for minor/major updates\n   - Set up automation schedule: Monday 9am\n\n3. **Software Composition Analysis (SCA)**\n   - Scan dependencies for known CVEs\n   - Check licenses (GPL, AGPL conflicts)\n   - Identify outdated packages (lagging >6 months)\n   - Monitor supply chain risks (typosquatting, abandoned packages)\n\n4. **Static Application Security Testing (SAST)**\n   - Use ESLint security plugins: eslint-plugin-security\n   - SonarQube or similar for code quality + security\n   - Scan for hardcoded secrets (git-secrets, TruffleHog)\n   - Pattern: npm install -D eslint-plugin-security\n\n5. **Secret Rotation**\n   - Rotate database passwords quarterly\n   - Rotate API keys when employees leave\n   - Revoke compromised tokens immediately\n   - Use secret manager: AWS Secrets Manager, Vault, 1Password\n\n6. **CVE Monitoring**\n   - Subscribe to security advisories\n   - Monitor npm security advisories feed\n   - Set up alerts for packages you depend on\n   - Test patches in staging before production",
+    "severity": "high",
+    "source": "GitHub: OWASP dependency-check, snyk, dependabot",
+    "tags": ["security", "dependencies", "vulnerabilities"],
+    "parameters": []
+  },
+  {
+    "id": "nfr-accessibility-wcag",
+    "name": "NFR: Accessibility (WCAG 2.1 AA)",
+    "description": "Ensure web applications are accessible to users with disabilities by following WCAG 2.1 AA standards.",
+    "category": "enforcement",
+    "domain": "Accessibility & NFR",
+    "template": "Web Accessibility (WCAG 2.1 AA):\n\n1. **Semantic HTML**\n   - Use semantic elements: <header>, <nav>, <main>, <footer>, <article>\n   - Use heading hierarchy: <h1>, <h2>, <h3> (don't skip levels)\n   - Use <button> for buttons, <a> for links\n   - Use <form>, <label>, <input> for forms\n   - Anti-pattern: <div onClick={...}> without role\n\n2. **Color Contrast**\n   - Text: 4.5:1 minimum (normal text)\n   - Text: 3:1 minimum (large text, 18pt+)\n   - Graphical elements: 3:1 minimum\n   - Don't rely on color alone to convey information\n   - Tool: WebAIM contrast checker\n\n3. **Keyboard Navigation**\n   - All functionality accessible via keyboard (Tab, Enter, Space)\n   - Never remove focus indicator without replacement\n   - Use tabindex=0 sparingly (breaks natural tab order)\n   - Test: Tab through page, no keyboard traps\n\n4. **Assistive Technology (AT)**\n   - Use aria-label, aria-labelledby for unlabeled elements\n   - Use aria-live for dynamic content updates\n   - Use role=\"button\" for custom button elements\n   - Test with screen readers: NVDA (Windows), JAWS (Windows), VoiceOver (Mac)\n\n5. **Image Alt Text**\n   - Provide descriptive alt text for all images\n   - Decorative images: alt=\"\"\n   - Avoid: alt=\"image\", alt=\"photo\", alt=\"bullet point\"\n   - Example: alt=\"User dashboard showing sales metrics for Q4 2024\"\n\n6. **Motion & Animation**\n   - Respect prefers-reduced-motion media query\n   - Pattern: @media (prefers-reduced-motion: reduce) { * { animation: none !important } }\n   - Don't auto-play videos with sound\n   - Provide captions for video content\n\n7. **Automated Testing**\n   - Lighthouse Accessibility audit (aim for 90+)\n   - axe DevTools browser extension\n   - ESLint plugin: eslint-plugin-jsx-a11y\n   - CI/CD integration: axe-core in tests",
+    "severity": "high",
+    "source": "GitHub: WCAG 2.1, WebAIM, Deque axe",
+    "tags": ["accessibility", "wcag", "inclusion"],
+    "parameters": []
+  },
+  {
+    "id": "nfr-scalability-architecture",
+    "name": "NFR: Scalability & System Architecture",
+    "description": "Design systems that scale horizontally and handle growing traffic and data volume.",
+    "category": "enforcement",
+    "domain": "Architecture & NFR",
+    "template": "Scalability Best Practices:\n\n1. **Horizontal Scaling**\n   - Stateless servers (no in-memory caches)\n   - Use distributed caches: Redis, Memcached\n   - Database sharding strategy\n   - Load balancer: nginx, HAProxy, cloud provider LB\n\n2. **Database Optimization**\n   - Index frequently queried columns\n   - Use query result caching: Redis\n   - Implement connection pooling\n   - Monitor slow queries; optimize N+1 queries\n\n3. **API Rate Limiting**\n   - Implement per-user rate limits\n   - Use sliding window or token bucket algorithm\n   - Return 429 status with Retry-After header\n   - Pattern: express-rate-limit middleware\n\n4. **CDN & Caching Strategy**\n   - Use CDN for static assets (Cloudflare, Vercel, AWS CloudFront)\n   - Set Cache-Control headers: public, max-age=31536000\n   - Use cache busting: hash filenames\n   - Monitor cache hit rates; optimize as needed\n\n5. **Monitoring & Observability**\n   - Collect metrics: response time, error rate, throughput\n   - Set up alerts: high error rate, slow response time\n   - Use APM tools: DataDog, New Relic, Sentry\n   - Log structured data (JSON); avoid free-form text\n\n6. **Capacity Planning**\n   - Monitor growth trends\n   - Estimate resource needs 6-12 months ahead\n   - Conduct load testing before peak seasons\n   - Have auto-scaling policies in place",
+    "severity": "high",
+    "source": "GitHub: system-design-primer, aws best practices",
+    "tags": ["scalability", "architecture", "nfr"],
+    "parameters": []
+  }
+]

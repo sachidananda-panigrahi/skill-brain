@@ -1,0 +1,74 @@
+[
+  {
+    "id": "nextjs-app-router",
+    "name": "Next.js: App Router & Server Components",
+    "description": "Leverage Next.js App Router and React Server Components for optimal performance and DX.",
+    "category": "pattern",
+    "domain": "SSR / Next.js",
+    "template": "Next.js App Router Best Practices:\n\n1. **App Router Structure**\n   - Use /app directory (not /pages)\n   - Route structure: app/[feature]/page.tsx\n   - Use app/layout.tsx for shared layouts\n   - Use app/(group) for grouped routes without URL segments\n\n2. **React Server Components (RSC)**\n   - Default: all components are server components\n   - Use 'use client' directive only when needed\n   - Server components: data fetching, secrets, database access\n   - Client components: event listeners, hooks, useState, useEffect\n\n3. **Server Actions & Forms**\n   - Use Server Actions for mutations (posts, updates, deletes)\n   - Secure: API keys, secrets stay server-side\n   - Progressive enhancement: forms work without JS\n   - Pattern: 'use server' directive at top of action function\n\n4. **Data Fetching Strategies**\n   - Fetch in Server Components; pass data to Client Components\n   - Use revalidateTag() and revalidatePath() for ISR\n   - Cache: fetch with { cache: 'force-cache' } for static data\n   - Dynamic: { revalidate: 3600 } for hourly updates\n\n5. **Streaming & Suspense**\n   - Use Suspense boundaries for slow components\n   - Streaming Server Components for progressive rendering\n   - Pattern: <Suspense fallback={<Skeleton />}><SlowComponent /></Suspense>\n   - Improves perceived performance and FCP/LCP metrics",
+    "severity": "high",
+    "source": "GitHub: vercel/next.js, app router docs",
+    "tags": ["nextjs", "ssr", "server-components"],
+    "parameters": []
+  },
+  {
+    "id": "nextjs-image-optimization",
+    "name": "Next.js: Image Optimization & Responsive Images",
+    "description": "Use Next.js Image component and modern formats for optimal Core Web Vitals.",
+    "category": "pattern",
+    "domain": "SSR / Next.js",
+    "template": "Next.js Image Optimization:\n\n1. **next/image Component**\n   - Always use <Image /> component (not <img>)\n   - Set explicit width and height (prevents CLS)\n   - Use placeholder='blur' for visual feedback\n   - Enable automatic WebP/AVIF conversion\n\n2. **Image Formats & Responsive**\n   - Use AVIF first, WebP fallback, JPEG base\n   - Implement srcSet for responsive images\n   - Use sizes attribute: sizes=\"(max-width: 768px) 100vw, 50vw\"\n   - Never load images 2x rendered size\n\n3. **Priority & Loading**\n   - Set priority={true} for above-the-fold images\n   - Use loading='lazy' for below-the-fold images\n   - Avoid loading='eager' on multiple images\n   - Prefetch hero images in link tags\n\n4. **Image Optimization Config**\n   - Set next.config.js deviceSizes and imageSizes\n   - Use remote pattern whitelisting for external domains\n   - Configure quality (75-85 is good default)\n   - Enable unoptimized={false} for CDN delivery",
+    "severity": "high",
+    "source": "GitHub: next.js image docs, web vitals",
+    "tags": ["nextjs", "images", "performance"],
+    "parameters": []
+  },
+  {
+    "id": "nextjs-middleware-edge",
+    "name": "Next.js: Middleware & Edge Runtime",
+    "description": "Use Edge Middleware for authentication, redirects, and request transformation.",
+    "category": "pattern",
+    "domain": "SSR / Next.js",
+    "template": "Next.js Middleware Best Practices:\n\n1. **Edge Middleware**\n   - File: middleware.ts at project root (app or pages level)\n   - Runs before routes are matched\n   - Use for auth, redirects, headers, request modification\n   - Fast execution; limited runtime (no Node.js APIs)\n\n2. **Authentication Middleware**\n   - Check auth tokens/cookies before routing\n   - Redirect unauthenticated users to /login\n   - Pass user info to downstream requests\n   - Pattern: export function middleware(request: NextRequest)\n\n3. **Response Headers & Security**\n   - Add security headers (HSTS, CSP, X-Frame-Options)\n   - Set cache headers for optimal CDN caching\n   - Add CORS headers for API routes\n   - Reference: https://securityheaders.com\n\n4. **Request Transformation**\n   - Modify headers, cookies, query params\n   - Add request tracking IDs\n   - Redirect based on geolocation or device type\n   - Pattern: NextResponse.next() with modified headers",
+    "severity": "high",
+    "source": "GitHub: next.js middleware docs",
+    "tags": ["nextjs", "middleware", "edge"],
+    "parameters": []
+  },
+  {
+    "id": "nextjs-bundle-optimization",
+    "name": "Next.js: Bundle Analysis & Code Splitting",
+    "description": "Analyze and optimize JavaScript bundle size for faster loading and better performance metrics.",
+    "category": "pattern",
+    "domain": "Performance Optimisation",
+    "template": "Next.js Bundle Optimization:\n\n1. **Bundle Analysis**\n   - Use @next/bundle-analyzer package\n   - Analyze production bundles: npm run build && npm run analyze\n   - Identify large dependencies (lodash, moment, etc.)\n   - Set bundle size budget: 200KB for landing, 300KB for app\n\n2. **Code Splitting Strategy**\n   - Route-based splitting (automatic with App Router)\n   - Component-based splitting: React.lazy for modals, charts\n   - Dynamic imports: import dynamically when needed\n   - Pattern: const Modal = dynamic(() => import('./Modal'))\n\n3. **Dependency Optimization**\n   - Replace heavy libraries: moment → date-fns, lodash → lodash-es\n   - Use tree-shaking: es2015 modules, named exports\n   - Import only needed functions: import { debounce } from 'lodash-es'\n   - Avoid polyfills for modern browsers\n\n4. **Third-Party Script Optimization**\n   - Use next/script with strategy prop\n   - strategy='afterInteractive' for analytics, ads\n   - strategy='lazyOnload' for non-critical scripts\n   - Load Google Fonts with display=swap parameter",
+    "severity": "high",
+    "source": "GitHub: next.js performance, webpack analysis",
+    "tags": ["nextjs", "bundle", "performance"],
+    "parameters": []
+  },
+  {
+    "id": "perf-lighthouse-core-vitals",
+    "name": "Performance: Google Core Web Vitals & Lighthouse",
+    "description": "Achieve 100% Lighthouse score by optimizing Core Web Vitals (CLS, LCP, INP, FCP).",
+    "category": "enforcement",
+    "domain": "Performance Optimisation",
+    "template": "Core Web Vitals & Lighthouse Targets:\n\n1. **Cumulative Layout Shift (CLS) < 0.1**\n   - Anti-pattern: Dynamic content without dimensions\n   - Fix: Always set width/height on images and media\n   - Fix: Reserve space for ads, embeds before loading\n   - Tool: Chrome DevTools > Performance > Layout Shifts\n\n2. **Largest Contentful Paint (LCP) < 2.5s**\n   - Optimize: Hero image (AVIF/WebP, proper sizes)\n   - Optimize: Critical CSS inlining in head\n   - Optimize: Lazy load below-the-fold content\n   - Tool: Web Vitals library, Lighthouse\n\n3. **Interaction to Next Paint (INP) < 200ms**\n   - Fix: Offload heavy JS work to requestIdleCallback\n   - Fix: Break up long tasks (>50ms) with yields\n   - Fix: Debounce/throttle input handlers\n   - Tool: React Profiler, Web Vitals INP metric\n\n4. **First Contentful Paint (FCP) < 1.5s**\n   - Optimize: Remove render-blocking resources\n   - Optimize: Inline critical path CSS\n   - Optimize: Preload critical fonts with <link rel=preload>\n   - Optimization: Use CDN for static assets\n\n5. **Time to Interactive (TTI) / Total Blocking Time (TBT) < 200ms**\n   - Fix: Code split JavaScript\n   - Fix: Remove unused JavaScript\n   - Fix: Minify and compress assets (gzip, brotli)\n   - Tool: Coverage tab in DevTools, lighthouse\n\n6. **Lighthouse 100% Checklist**\n   - Performance: All CWV targets met\n   - Accessibility: WCAG 2.1 AA minimum\n   - Best Practices: HTTPS, no console errors, no deprecated APIs\n   - SEO: Meta tags, structured data, mobile-friendly",
+    "severity": "high",
+    "source": "GitHub: google web-vitals, lighthouse",
+    "tags": ["performance", "lighthouse", "metrics"],
+    "parameters": []
+  },
+  {
+    "id": "perf-memory-leaks",
+    "name": "Performance: Memory Leak Prevention",
+    "description": "Prevent memory leaks through proper cleanup, event listener management, and object lifecycle.",
+    "category": "enforcement",
+    "domain": "Performance Optimisation",
+    "template": "Memory Leak Prevention:\n\n1. **useEffect Cleanup**\n   - Anti-pattern: Missing cleanup function\n   - Fix: Always return cleanup function from useEffect\n   - Pattern: useEffect(() => { const handler = () => {}; window.addEventListener('resize', handler); return () => window.removeEventListener('resize', handler); }, [])\n\n2. **Event Listener Management**\n   - Use AbortController for fetch and addEventListener\n   - Pattern: const abort = new AbortController(); fetch(url, { signal: abort.signal })\n   - Cleanup: abort.abort() in component unmount\n   - Never use arrow functions in addEventListener (creates new instance each time)\n\n3. **Closure & Reference Retention**\n   - Avoid retaining large objects in closures\n   - Clear references: setInterval/setTimeout → clearInterval/clearTimeout\n   - Detach DOM elements from closures\n   - Monitor with Chrome DevTools Heap Snapshots\n\n4. **React Context & Memoization**\n   - Memoize context values: const value = useMemo(() => ({...}), [deps])\n   - Split contexts to avoid unnecessary re-renders\n   - Use weak references for caches (WeakMap, WeakSet)\n\n5. **Third-Party Library Cleanup**\n   - Properly unmount third-party widgets (maps, charts, editors)\n   - Call destroy() or cleanup() methods in useEffect cleanup\n   - Monitor bundle size: uninstall unused libraries\n   - Review dependencies quarterly for leaks and outdated packages",
+    "severity": "high",
+    "source": "GitHub: react docs, chrome devtools memory profiling",
+    "tags": ["performance", "memory", "debugging"],
+    "parameters": []
+  }
+]

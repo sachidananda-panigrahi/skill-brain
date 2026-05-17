@@ -1,0 +1,39 @@
+<section id="sec-add" class="p-8">
+  <h1 id="formTitle" class="text-2xl font-bold text-slate-900 mb-1">New Skill</h1>
+  <p class="text-slate-500 text-sm mb-6">Create a reusable prompt template</p>
+
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 max-w-2xl">
+    <input type="hidden" id="editId" />
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Name <span class="text-rose-500">*</span></label>
+        <input id="skillName" type="text" placeholder="e.g. Enforce: React Performance"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+        <input id="skillDesc" type="text" placeholder="Short description"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+          Template <span class="text-rose-500">*</span>
+          <span id="tmplCount" class="ml-2 text-xs text-slate-400 font-normal">0 chars</span>
+        </label>
+        <textarea id="skillTemplate" rows="6" placeholder="Prompt template. Use {{paramName}} for parameters."
+          oninput="document.getElementById('tmplCount').textContent=this.value.length+' chars'"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Parameters (comma-separated names)</label>
+        <input id="skillParams" type="text" placeholder="e.g. componentName, stateType"
+          class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button onclick="saveSkill()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">Save Skill</button>
+        <button onclick="resetForm()" class="border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">Reset</button>
+      </div>
+    </div>
+    <div id="formMsg" class="mt-4 text-sm"></div>
+  </div>
+</section>

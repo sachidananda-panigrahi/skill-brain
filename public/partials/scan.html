@@ -1,0 +1,24 @@
+<section id="sec-scan" class="p-8">
+  <h1 class="text-2xl font-bold text-slate-900 mb-1">Scan Project</h1>
+  <p class="text-slate-500 text-sm mb-6">Auto-generate skills from your codebase via AST + regex analysis</p>
+
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 max-w-xl">
+    <label class="block text-sm font-medium text-slate-700 mb-2">Project path (absolute)</label>
+    <input id="scanPath" type="text" placeholder="📁 /Users/you/projects/my-app"
+      class="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+    <div class="flex gap-3 mb-4">
+      <select id="scanMode" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        <option value="update">Update (upsert)</option>
+        <option value="add">Add only (no overwrite)</option>
+      </select>
+      <button onclick="runScan()" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">Start Scan</button>
+    </div>
+    <div id="scanProgress" class="hidden">
+      <div class="w-full bg-slate-100 rounded-full h-2 mb-3 overflow-hidden">
+        <div class="h-2 bg-brand-500 rounded-full animate-pulse" style="width:60%"></div>
+      </div>
+      <p class="text-sm text-slate-500">Scanning…</p>
+    </div>
+    <div id="scanResult" class="mt-4"></div>
+  </div>
+</section>

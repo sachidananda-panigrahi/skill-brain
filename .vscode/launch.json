@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: HTTP Server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/index.js",
+      "env": { "PORT": "3000" },
+      "console": "integratedTerminal",
+      "restart": true
+    },
+    {
+      "name": "Debug: MCP Server (stdio)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/mcp-server.js",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug: Scan Project",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scanProject.js",
+      "args": ["--path=${input:projectPath}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug: CLI",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/skill-brain.js",
+      "args": ["${input:cliCommand}"],
+      "console": "integratedTerminal"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "projectPath",
+      "type": "promptString",
+      "description": "Path to project to scan",
+      "default": "."
+    },
+    {
+      "id": "cliCommand",
+      "type": "pickString",
+      "description": "CLI command to run",
+      "options": ["start", "mcp", "scan .", "review", "search react performance"],
+      "default": "start"
+    }
+  ]
+}

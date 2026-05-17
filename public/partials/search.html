@@ -1,0 +1,27 @@
+<section id="sec-search" class="p-8">
+  <h1 class="text-2xl font-bold text-slate-900 mb-1">Semantic Search</h1>
+  <p class="text-slate-500 text-sm mb-6">Find skills by meaning using TF-IDF or OpenAI embeddings</p>
+
+  <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 mb-6 flex items-start gap-4">
+    <div class="w-10 h-10 bg-brand-500 rounded-xl flex-shrink-0 flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    </div>
+    <div>
+      <p class="font-semibold text-indigo-700">AI-Powered Retrieval</p>
+      <p class="text-sm text-indigo-600 mt-0.5">Uses TF-IDF cosine similarity (or OpenAI dense embeddings when <code>OPENAI_API_KEY</code> is set).</p>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+    <div class="flex gap-3">
+      <input id="searchInput" type="text" placeholder="e.g. react performance, accessibility aria, security headers…"
+        class="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+        onkeydown="if(event.key==='Enter') runSearch()" />
+      <select id="searchK" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+        <option value="3">Top 3</option><option value="5" selected>Top 5</option><option value="10">Top 10</option>
+      </select>
+      <button onclick="runSearch()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">Search</button>
+    </div>
+  </div>
+  <div id="searchResults" class="space-y-3"></div>
+</section>

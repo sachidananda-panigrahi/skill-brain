@@ -1,0 +1,15 @@
+<section id="sec-review" class="p-8">
+  <h1 class="text-2xl font-bold text-slate-900 mb-1">Code Review</h1>
+  <p class="text-slate-500 text-sm mb-6">Analyse your latest git commits for anti-patterns and link findings to skills</p>
+
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 max-w-xl mb-6">
+    <label class="block text-sm font-medium text-slate-700 mb-2">Base branch / ref</label>
+    <div class="flex gap-3 mb-2">
+      <input id="reviewBase" type="text" value="HEAD~1" placeholder="HEAD~1, origin/main, main…"
+        class="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+      <button onclick="runCodeReview()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">Run Review</button>
+    </div>
+    <p class="text-xs text-slate-400">Compares HEAD to the given base ref via git diff. Server must be in a git repo.</p>
+  </div>
+  <div id="reviewResult"></div>
+</section>

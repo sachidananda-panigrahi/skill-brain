@@ -1,0 +1,50 @@
+[
+  {
+    "id": "react-hooks-rules",
+    "name": "React: Hooks Rules & Dependencies",
+    "description": "Enforce strict React Hooks rules and dependency tracking to prevent bugs and memory leaks.",
+    "category": "pattern",
+    "domain": "React.js / TypeScript",
+    "template": "React Hooks Best Practices:\n\n1. **Hooks Rules Enforcement**\n   - Use ESLint plugin: eslint-plugin-react-hooks\n   - Rules: rules-of-hooks, exhaustive-deps (MANDATORY)\n   - Never call hooks conditionally; always at top-level\n   - Never call hooks from regular functions\n\n2. **useEffect Dependency Arrays**\n   - Include ALL external values in dependency array\n   - Use useCallback/useMemo to memoize dependencies\n   - Avoid omitting dependencies (leads to stale closures)\n   - Pattern: useEffect(() => { /* setup */ return () => { /* cleanup */ } }, [deps])\n\n3. **useCallback & useMemo Usage**\n   - Use useCallback for callbacks passed to memoized children\n   - Use useMemo only for expensive calculations\n   - Don't over-memoize (profiling first!)\n   - Reference: React Profiler, why-did-you-render\n\n4. **Custom Hooks Design**\n   - Extract stateful logic into custom hooks\n   - Hooks should be composable and reusable\n   - Document hook behavior and dependencies\n   - Use TypeScript generics for flexible hooks",
+    "severity": "high",
+    "source": "GitHub: react docs, Rules of Hooks",
+    "tags": ["react", "hooks", "best-practices"],
+    "parameters": []
+  },
+  {
+    "id": "react-composition-patterns",
+    "name": "React: Composition & Avoid Prop Drilling",
+    "description": "Use composition patterns to avoid prop drilling and maintain clean component hierarchies.",
+    "category": "pattern",
+    "domain": "React.js / TypeScript",
+    "template": "React Composition Best Practices:\n\n1. **Avoid Prop Drilling**\n   - Don't pass props through 3+ levels of components\n   - Use composition: pass components as children\n   - Example: <Layout><Header /><Main /><Footer /></Layout>\n   - Alternative: Context API for cross-cutting concerns (theme, locale)\n\n2. **Composition Over Inheritance**\n   - Use slots/children pattern for flexible layouts\n   - Create compound components for related UI\n   - Example: <Tabs><Tab label=\"A\"><Panel /></Tab></Tabs>\n   - Avoid class inheritance; use functional composition\n\n3. **Higher-Order Components (HOCs) & Render Props**\n   - HOCs for cross-cutting concerns (auth, theme)\n   - Render props for shared stateful logic\n   - Consider hooks as first choice over HOCs/render props\n   - Pattern: const withAuth = (Component) => (props) => authUser ? <Component {...props} /> : <Login />\n\n4. **Component Splitting**\n   - Break large components into smaller, reusable pieces\n   - Single responsibility: one component, one concern\n   - Use React DevTools Profiler to identify bottlenecks\n   - Measure render times; optimize only when necessary",
+    "severity": "high",
+    "source": "GitHub: react docs, advanced patterns",
+    "tags": ["react", "composition", "patterns"],
+    "parameters": []
+  },
+  {
+    "id": "react-performance-optimization",
+    "name": "React: Performance Optimization & Memoization",
+    "description": "Optimize React rendering with proper memoization, lazy loading, and profiling techniques.",
+    "category": "pattern",
+    "domain": "React.js / TypeScript",
+    "template": "React Performance Optimization:\n\n1. **Memoization Strategies**\n   - Use React.memo for expensive components\n   - Use useMemo for expensive calculations\n   - Use useCallback for event handlers\n   - Profile first: don't over-memoize prematurely\n\n2. **Code Splitting & Lazy Loading**\n   - Use React.lazy and Suspense for route-based splitting\n   - Lazy load heavy components (charts, editors, modals)\n   - Pattern: const Editor = React.lazy(() => import('./Editor'))\n   - Provide fallback UI during loading\n\n3. **Virtual Scrolling**\n   - Use react-window or react-virtualized for long lists\n   - Render only visible items; unmount off-screen items\n   - Significantly improve scroll performance\n\n4. **React Profiler Usage**\n   - Use Chrome DevTools React Profiler\n   - Identify expensive components and re-renders\n   - Profile real user interactions\n   - Focus optimization on high-impact components\n\n5. **State Management Optimization**\n   - Keep state as close to usage as possible\n   - Avoid storing derived state\n   - Use state machines for complex state (Zustand, XState)\n   - Split state into separate contexts to minimize re-renders",
+    "severity": "high",
+    "source": "GitHub: react docs, performance",
+    "tags": ["react", "performance", "optimization"],
+    "parameters": []
+  },
+  {
+    "id": "typescript-strict-mode",
+    "name": "TypeScript: Strict Mode & Type Safety",
+    "description": "Configure and enforce strict TypeScript for maximum type safety and early error detection.",
+    "category": "pattern",
+    "domain": "React.js / TypeScript",
+    "template": "TypeScript Strict Mode Best Practices:\n\n1. **tsconfig.json Strict Settings**\n   - Set: strict: true, noImplicitAny: true, strictNullChecks: true\n   - Enable: noUnusedLocals, noUnusedParameters, noImplicitReturns\n   - Set: exactOptionalPropertyTypes: true\n   - Example: tsconfig.json in project root\n\n2. **Type Definitions**\n   - Define interfaces for all major data structures\n   - Use union types for discriminated unions\n   - Avoid 'any' type; use 'unknown' with type guards instead\n   - Use generics for reusable types\n\n3. **Generic Component Types**\n   - Define TypeScript generics for flexible components\n   - Example: interface Props<T> { items: T[]; render: (item: T) => ReactNode }\n   - Use 'extends' keyword for type constraints\n   - Document generic parameters with JSDoc\n\n4. **Narrowing & Type Guards**\n   - Use typeof, instanceof, discriminated unions\n   - Create custom type guards: (value: unknown): value is MyType\n   - Use const assertions for literal types\n   - Avoid type assertions; use type narrowing instead",
+    "severity": "high",
+    "source": "GitHub: typescript handbook, strict mode",
+    "tags": ["typescript", "types", "safety"],
+    "parameters": []
+  }
+]

@@ -1,0 +1,7 @@
+{
+  // Workspace search/editor defaults
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {}
+}

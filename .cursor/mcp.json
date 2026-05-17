@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "skill-brain": {
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp-server.js"],
+      "env": {},
+      "description": "skill-brain RAG skills engine — search, enforce, and review coding skills"
+    }
+  }
+}

@@ -1,0 +1,120 @@
+[
+  {
+    "id": "architect-ui-architecture",
+    "name": "UI Architecture: Layered Slot-Based Shells",
+    "description": "Build scalable, maintainable UI shells using slot composition and micro-frontend patterns.",
+    "category": "architecture",
+    "domain": "UI Architecture",
+    "template": "UI Architecture Pattern:\n\n1. **Slot-Based Composition**: Use named slots for layout regions instead of prop drilling\n   - Header, Navigation, Sidebar, Main, Footer slots\n   - Allows parent shells to compose without touching child markup\n   - Reference: Web Components Shadow DOM slots\n\n2. **Module Federation Pattern**: For monorepos and micro-frontends\n   - Use Webpack Module Federation or Turbopack federation\n   - Expose components as remote modules\n   - Isolate team deployments\n   - Reference: https://webpack.js.org/concepts/module-federation/\n\n3. **Design System Integration**: Ensure component library integration\n   - Establish token-based styling (tailwind, design tokens)\n   - Maintain single source of truth for design primitives\n   - Versioning strategy: semantic versioning, changelogs\n   - Reference: shadcn/ui, Chakra UI, Storybook",
+    "severity": "high",
+    "source": "GitHub: module-federation, shadcn/ui, design-systems",
+    "tags": ["architecture", "composition", "monorepo"],
+    "parameters": [
+      { "name": "project", "description": "Your project name" },
+      { "name": "federation_strategy", "description": "Module Federation or import sharing" }
+    ]
+  },
+  {
+    "id": "architect-design-systems",
+    "name": "Design Systems: Token-Based Styling & Primitives",
+    "description": "Create maintainable, scalable design systems with strict tokenization and primitive-first approach.",
+    "category": "architecture",
+    "domain": "Design Systems",
+    "template": "Design System Best Practices:\n\n1. **Token-First Approach**\n   - Define all design tokens as CSS custom properties\n   - Use design token frameworks: Style Dictionary, Figma tokens\n   - Never hardcode colors or sizes; always reference tokens\n   - Example: var(--color-primary-500), var(--spacing-4)\n   - Light/dark theme support through token overrides\n\n2. **Primitive-First Components**\n   - Start with unstyled, accessible primitives (Button, Input, Card, Stack)\n   - Build higher-level components from primitives\n   - Ensure all primitives pass accessibility audits (WCAG 2.1 AA minimum)\n   - Reference: Headless UI, Radix UI, AriaKit\n\n3. **Documentation & Storybook**\n   - Document every component with visual variants, states, accessibility notes\n   - Use Storybook as single source of truth for design\n   - Include examples of correct/incorrect usage\n   - Link to design spec and implementation patterns\n\n4. **Theming Strategy**\n   - Support light/dark themes via CSS custom properties\n   - Allow runtime theme switching without page reload\n   - Test visual regressions across theme variants\n   - Ensure sufficient color contrast (WCAG AA minimum 4.5:1)",
+    "severity": "high",
+    "source": "GitHub: shadcn/ui, radix-ui, Style Dictionary",
+    "tags": ["design", "tokens", "accessibility"],
+    "parameters": [
+      { "name": "themingStrategy", "description": "CSS variables, Tailwind, styled-components, or CSS-in-JS" }
+    ]
+  },
+  {
+    "id": "architect-monorepo-workspace",
+    "name": "Monorepo & Workspace Management: Turborepo Pattern",
+    "description": "Structure scalable monorepos with Turborepo, clear boundaries, and efficient incremental builds.",
+    "category": "architecture",
+    "domain": "Micro-Frontend / Monorepo",
+    "template": "Monorepo Best Practices:\n\n1. **Workspace Structure**\n   - apps/: Next.js, SPA, other executable apps\n   - packages/: Shared libraries (ui, utils, hooks, config)\n   - tools/: Scripts, CLI tools, code generators\n   - docs/: Documentation, guides, architecture decisions\n\n2. **Dependency Management**\n   - Use pnpm workspaces for hoisting and disk efficiency\n   - Enforce strict dependency boundaries (no circular deps)\n   - Version strategy: consistent or independent versioning\n   - Document public APIs and breaking changes\n\n3. **Build & Cache Strategy**\n   - Use Turborepo for incremental builds and remote caching\n   - Cache artifacts (dist, .next, build outputs)\n   - Use hash-based task invalidation\n   - Reference: https://turbo.build/\n\n4. **Testing Strategy**\n   - Run tests in parallel across workspaces\n   - Use git diff to run only affected tests (>80% coverage minimum)\n   - Isolate test databases per workspace\n\n5. **CI/CD Integration**\n   - Deploy only changed packages\n   - Run nx affected to detect impact zone\n   - Use semantic versioning with automatic changesets",
+    "severity": "high",
+    "source": "GitHub: vercel/turborepo, nrwl/nx",
+    "tags": ["monorepo", "build", "ci-cd"],
+    "parameters": [
+      { "name": "packageManager", "description": "pnpm, npm, or yarn" },
+      { "name": "buildTool", "description": "Turborepo or nx" }
+    ]
+  },
+  {
+    "id": "architect-ai-augmented",
+    "name": "AI-Augmented Engineering: LLM Integration & Prompt Patterns",
+    "description": "Integrate LLMs (Claude, Ollama) into development workflows for code generation and code review assistance.",
+    "category": "architecture",
+    "domain": "AI-Augmented Engineering",
+    "template": "AI-Augmented Development:\n\n1. **Code Generation with AI**\n   - Use Claude/GPT for component scaffolding, tests, and refactoring\n   - Version control generated code; don't treat as disposable\n   - Validate AI-generated code through code review and testing\n   - Document AI decision points\n\n2. **LLM API Integration Patterns**\n   - Use streaming for better UX (Server-Sent Events, WebSocket)\n   - Implement token budgeting and cost tracking\n   - Cache embeddings and model outputs (Redis, Supabase pgvector)\n   - Reference: Anthropic Claude API, LangChain\n\n3. **Prompt Engineering for Consistency**\n   - Create system prompts for role-based tasks (architect, code reviewer)\n   - Use structured output (JSON) for machine-readable responses\n   - Build prompt templates with variable interpolation\n   - Store prompts in version control\n\n4. **Generative UI Patterns**\n   - Use AI to generate form schemas, tables, and layouts from data\n   - Keep AI-generated UI within design system boundaries\n   - Human review all generative outputs\n   - Example: Form.io, MUI Code Generator",
+    "severity": "medium",
+    "source": "GitHub: anthropic-ai/claude-api, langchain",
+    "tags": ["ai", "generation", "integration"],
+    "parameters": [
+      { "name": "llmProvider", "description": "Claude, GPT, Ollama, or other" }
+    ]
+  },
+  {
+    "id": "enforce-ci-cd-pipelines",
+    "name": "Enforce: CI/CD Pipelines & Automated Deployment",
+    "description": "Establish reliable, fast CI/CD with automated testing, linting, and controlled deployments.",
+    "category": "enforcement",
+    "domain": "CI/CD Pipelines",
+    "template": "CI/CD Best Practices:\n\n1. **Pipeline Stages**\n   - Lint: ESLint, Prettier, TypeScript compiler\n   - Test: Unit, Integration, E2E tests with >80% coverage\n   - Build: Production bundle, SSR pre-render, Docker image\n   - Deploy: Staging → Production with health checks\n\n2. **Testing in CI**\n   - Run tests in parallel (Jest, Vitest, Playwright)\n   - Generate coverage reports\n   - Fail on coverage drops below 80%\n   - Cache node_modules and build artifacts\n\n3. **Deployment Strategy**\n   - Blue-green deployments for zero-downtime\n   - Canary deployments for gradual rollout (5% → 25% → 100%)\n   - Automatic rollback on health check failures\n   - Database migration safety checks before deploy\n\n4. **Monitoring & Alerting**\n   - Collect metrics (build time, test duration, deploy success rate)\n   - Alert on deployment failures, performance regressions\n   - Create incident runbooks\n   - Track deployment frequency and lead time for changes",
+    "severity": "high",
+    "source": "GitHub: actions, vercel, automated-testing",
+    "tags": ["ci-cd", "automation", "deployment"],
+    "parameters": []
+  },
+  {
+    "id": "enforce-team-leadership",
+    "name": "Enforce: Team Leadership & Mentoring (12–15 YOE)",
+    "description": "Leadership practices for Senior Architects managing cross-functional teams and driving architectural decisions.",
+    "category": "enforcement",
+    "domain": "Team Leadership",
+    "template": "Team Leadership Standards:\n\n1. **Code Review Governance**\n   - Require approval from 2+ architects on critical changes\n   - Use CODEOWNERS file to enforce review requirements\n   - Document reasoning for architectural decisions in PRs\n   - Create domain-specific code review checklists\n\n2. **Mentoring & Knowledge Transfer**\n   - Pair less-experienced engineers on critical features\n   - Document architectural decisions in ADRs\n   - Hold weekly architecture sync meetings\n   - Create runbooks for common operational procedures\n\n3. **Agile / Scrum Practices**\n   - Break down features into architectural spikes + implementation stories\n   - Use story points accounting for design complexity\n   - Hold architecture review sessions before sprint planning\n   - Track and pay down technical debt systematically\n\n4. **Cross-Functional Communication**\n   - Present architecture to product, design, and QA teams\n   - Document trade-offs and constraints clearly\n   - Schedule design reviews before implementation\n   - Use diagrams (C4, sequence, state) to explain complex flows",
+    "severity": "high",
+    "source": "GitHub: open-standards, architectural-decisions",
+    "tags": ["leadership", "governance", "mentoring"],
+    "parameters": []
+  },
+  {
+    "id": "enforce-ux-wireframing",
+    "name": "Enforce: UX & Wireframing: User Journey Mapping",
+    "description": "Design user workflows with clarity, accessibility, and performance in mind.",
+    "category": "enforcement",
+    "domain": "UX & Wireframing",
+    "template": "UX & Wireframing Standards:\n\n1. **User Journey Mapping**\n   - Document happy path, error cases, and edge cases\n   - Use user flow diagrams (Figma, Miro)\n   - Identify friction points and optimization opportunities\n   - Test flows with real users before implementation\n\n2. **Wireframing Best Practices**\n   - Create low-fidelity wireframes for information architecture\n   - Use component-based wireframing (reference design system)\n   - Document interaction patterns (hover, focus, loading, error states)\n   - Include accessibility requirements in wireframes\n\n3. **Minimalist Design Execution**\n   - Follow KISS principle: keep interfaces simple and focused\n   - Use whitespace intentionally\n   - Reduce cognitive load (avoid feature bloat)\n   - Prioritize clarity over decoration\n\n4. **Core User Journey Elements**\n   - Entry points (how users get here?)\n   - Primary action (what's the main goal?)\n   - Secondary paths (alternative flows)\n   - Exit points (how do users leave?)\n   - Error recovery (what if something goes wrong?)",
+    "severity": "medium",
+    "source": "GitHub: nngroup, figma-community",
+    "tags": ["ux", "design", "user-experience"],
+    "parameters": []
+  },
+  {
+    "id": "enforce-agile-scrum",
+    "name": "Enforce: Agile / Scrum: Sprint Planning & Ceremonies",
+    "description": "Establish reliable sprint planning, standups, and retrospectives for team alignment and continuous improvement.",
+    "category": "enforcement",
+    "domain": "Agile / Scrum",
+    "template": "Agile / Scrum Best Practices:\n\n1. **Sprint Planning**\n   - Hold 2-hour planning sessions at sprint start\n   - Define acceptance criteria for each user story\n   - Account for architectural spikes in estimation\n   - Create technical subtasks for complex features\n\n2. **Daily Standups**\n   - 15-minute daily meetings (async updates for distributed teams)\n   - Identify blockers immediately\n   - Share progress on tasks\n   - Escalate impediments to tech lead\n\n3. **Sprint Review & Retrospective**\n   - Demo completed work to stakeholders\n   - Collect feedback and create follow-up items\n   - Hold retrospectives to identify process improvements\n   - Track velocity trend and adjust capacity planning\n\n4. **Backlog Management**\n   - Maintain prioritized product backlog\n   - Refine backlog items before sprint planning\n   - Define definition of done (checklist)\n   - Track burn-down and burn-up charts",
+    "severity": "high",
+    "source": "GitHub: agile-manifesto, scrum-framework",
+    "tags": ["agile", "scrum", "planning"],
+    "parameters": []
+  },
+  {
+    "id": "enforce-rest-graphql-apis",
+    "name": "Enforce: RESTful & GraphQL APIs: Schema & Contract Design",
+    "description": "Design robust, versioned APIs with clear contracts, versioning strategies, and optimal data fetching.",
+    "category": "enforcement",
+    "domain": "RESTful & GraphQL APIs",
+    "template": "API Design Best Practices:\n\n1. **RESTful API Design**\n   - Use standard HTTP verbs (GET, POST, PUT, DELETE, PATCH)\n   - Implement proper status codes (200, 201, 400, 401, 403, 404, 500)\n   - Use resource-based URLs (/users/:id, /posts/:id/comments)\n   - Support filtering, sorting, pagination with query params\n   - API versioning strategy: /api/v1/, /api/v2/\n\n2. **GraphQL Design**\n   - Define clear, documented schema with type definitions\n   - Implement query complexity analysis to prevent expensive queries\n   - Use field-level permissions and rate limiting\n   - Support pagination with cursor-based offsets\n   - Cache strategies: Apollo Client, Relay Modern\n\n3. **Request/Response Contracts**\n   - Document request/response shapes with OpenAPI/GraphQL SDL\n   - Validate requests on server using Zod, Yup, or similar\n   - Version responses; never remove fields (mark deprecated)\n   - Return consistent error response format\n\n4. **Caching & Performance**\n   - Implement ETag-based HTTP caching\n   - Use CDN for static responses\n   - Support compression (gzip, brotli)\n   - Cache warming strategies for frequently accessed data",
+    "severity": "high",
+    "source": "GitHub: openapi-initiative, graphql-js",
+    "tags": ["api", "rest", "graphql"],
+    "parameters": []
+  }
+]
