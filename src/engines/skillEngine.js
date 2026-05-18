@@ -37,6 +37,10 @@ function loadCommonSkills() {
 function saveCommonSkills(skills) {
   fs.writeJsonSync(COMMON_SKILLS_DB, skills, { spaces: 2 });
   try { require('./ragIndex').markDirty(null); } catch {}
+  // Fire-and-forget: regenerate any registered SKILLS.md files
+  setImmediate(() => {
+    try { require('../workflows/skillsInitializer').regenerateAll(); } catch {}
+  });
 }
 
 function projectSkillsFile(projectName) {
@@ -65,6 +69,10 @@ function saveProjectSkills(projectName, skills) {
   fs.ensureDirSync(projectDir);
   fs.writeJsonSync(projectSkillsFile(projectName), skills, { spaces: 2 });
   try { require('./ragIndex').markDirty(projectName); } catch {}
+  // Fire-and-forget: regenerate any registered SKILLS.md files
+  setImmediate(() => {
+    try { require('../workflows/skillsInitializer').regenerateAll(); } catch {}
+  });
 }
 
 function loadAllProjectNames() {

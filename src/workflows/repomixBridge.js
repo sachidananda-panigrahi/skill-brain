@@ -1,108 +1,88 @@
 'use strict';
 
 /**
- * Thin adapter between Repomix and skill-brain.
- * Repomix excels at file packing; skill-brain handles metadata extraction.
- * This bridge adopts: file collection, security pre-check, token counting, remote packing.
- *
- * Gracefully degrades if repomix is not installed.
+ * Native file-scanning bridge — replaces the former repomix adapter.
+ * All operations use built-in Node.js APIs only.
  */
 
-let repomix;
-try {
-  repomix = require('repomix');
-} catch {
-  repomix = null;
-}
+const fs = require('fs');
+const path = require('path');
 
-/**
- * Collect project files respecting .gitignore and maxFileSize.
- * Falls back to returning null if repomix not available (caller uses own walker).
- * @param {string} projectPath
- * @param {{ ignore?: string[], include?: string[], maxFileSize?: number }} options
- * @returns {Promise<string[]|null>} Array of file paths, or null if repomix unavailable
- */
-async function collectProjectFiles(projectPath, options = {}) {
-  if (!repomix) return null;
-  try {
-    const { collectFiles } = repomix;
-    if (!collectFiles) return null;
-    return await collectFiles(projectPath, {
-      ignore: { useGitignore: true, customPatterns: options.ignore || [] },
-      include: options.include || ['**/*'],
-    });
-  } catch {
-    return null;
+const SKIP_DIRS = new Set(['node_modules', '.git', '.next', '.nuxt', 'dist', 'build', 'out', '.cache', 'coverage', '.turbo']);
+const SKIP_EXTS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.webp', '.avif',
+  '.woff', '.woff2', '.ttf', '.eot', '.otf', '.pdf', '.zip', '.tar', '.gz', '.lock',
+  '.mp4', '.mp3', '.wav', '.ogg', '.min.js', '.min.css']);
+
+const SECRET_PATTERNS = [
+  { re: /['"]?(sk|pk|rk)-[a-zA-Z0-9]{20,}['"]?/, name: 'API key (sk/pk/rk)' },
+  { re: /AKIA[0-9A-Z]{16}/, name: 'AWS Access Key' },
+  { re: /ghp_[a-zA-Z0-9]{36}/, name: 'GitHub PAT' },
+  { re: /ghs_[a-zA-Z0-9]{36}/, name: 'GitHub App token' },
+  { re: /xox[baprs]-[a-zA-Z0-9-]{10,}/, name: 'Slack token' },
+  { re: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, name: 'Private key' },
+  { re: /(?:password|passwd|secret|api[_-]?key|auth[_-]?token)\s*[:=]\s*['"][^'"]{12,}['"]/i, name: 'Hardcoded credential' },
+  { re: /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\./, name: 'JWT token' },
+];
+
+function walk(dir, files = [], maxDepth = 10, depth = 0) {
+  if (depth > maxDepth) return files;
+  let entries;
+  try { entries = fs.readdirSync(dir); } catch { return files; }
+  for (const entry of entries) {
+    if (entry.startsWith('.') || SKIP_DIRS.has(entry)) continue;
+    const full = path.join(dir, entry);
+    let stat;
+    try { stat = fs.statSync(full); } catch { continue; }
+    if (stat.isDirectory()) {
+      walk(full, files, maxDepth, depth + 1);
+    } else {
+      const ext = path.extname(full).toLowerCase();
+      if (!SKIP_EXTS.has(ext) && stat.size < 500_000) files.push(full);
+    }
   }
+  return files;
 }
 
-/**
- * Pack a project into structured XML output with token counts.
- * @param {string} projectPath
- * @param {{ removeComments?: boolean }} options
- * @returns {Promise<{files: object[], totalTokens: number, tokensByFile: Map<string,number>}|null>}
- */
-async function packForIndex(projectPath, options = {}) {
-  if (!repomix) return null;
-  try {
-    const { pack } = repomix;
-    if (!pack) return null;
-    const result = await pack(projectPath, {
-      output: { style: 'xml', removeComments: options.removeComments ?? false },
-      tokenCount: { encoding: 'cl100k_base' },
-    });
-    return result;
-  } catch {
-    return null;
+async function collectProjectFiles(projectPath) {
+  return walk(projectPath);
+}
+
+async function packForIndex(projectPath) {
+  const files = walk(projectPath);
+  const fileObjs = [];
+  let totalSize = 0;
+  for (const f of files) {
+    try {
+      const content = fs.readFileSync(f, 'utf8');
+      fileObjs.push({ path: path.relative(projectPath, f), content });
+      totalSize += content.length;
+    } catch { /* skip binary/unreadable */ }
   }
+  return { files: fileObjs, totalTokens: Math.round(totalSize / 4) };
 }
 
-/**
- * Run Secretlint security pre-check on the project.
- * @param {string} projectPath
- * @returns {Promise<{passed: boolean, issues: Array<{file: string, message: string}>}>}
- */
 async function securityPreCheck(projectPath) {
-  if (!repomix) return { passed: true, issues: [], note: 'repomix not installed' };
-  try {
-    // Repomix exposes runSecurityCheck in its core module
-    const { runSecurityCheck } = require('repomix/dist/core/security/securityCheck.js');
-    if (!runSecurityCheck) return { passed: true, issues: [] };
-    const result = await runSecurityCheck(projectPath);
-    return {
-      passed: !result || result.length === 0,
-      issues: Array.isArray(result) ? result : [],
-    };
-  } catch {
-    return { passed: true, issues: [] };
+  const issues = [];
+  const files = walk(projectPath);
+  for (const file of files) {
+    let content;
+    try { content = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    for (const { re, name } of SECRET_PATTERNS) {
+      if (re.test(content)) {
+        issues.push({ file: path.relative(projectPath, file), message: `Possible ${name} detected` });
+        break;
+      }
+    }
   }
+  return { passed: issues.length === 0, issues };
 }
 
-/**
- * Pack a remote GitHub repository for indexing.
- * @param {string} url - GitHub repository URL
- * @returns {Promise<{files: object[], totalTokens: number}|null>}
- */
-async function packRemote(url) {
-  if (!repomix) return null;
-  try {
-    const { packFromRemote } = repomix;
-    if (!packFromRemote) return null;
-    return await packFromRemote(url, {
-      output: { style: 'xml' },
-      tokenCount: { encoding: 'cl100k_base' },
-    });
-  } catch {
-    return null;
-  }
+async function packRemote() {
+  return null;
 }
 
-/**
- * Check if repomix is available.
- * @returns {boolean}
- */
 function isAvailable() {
-  return repomix !== null;
+  return true;
 }
 
 module.exports = { collectProjectFiles, packForIndex, securityPreCheck, packRemote, isAvailable };

@@ -22,10 +22,13 @@ async function loadPrebuiltSkills() {
     for (const file of jsonFiles) {
       const filePath = path.join(PREBUILT_SKILLS_DIR, file);
       const content = await fs.readJson(filePath);
-      allSkills = allSkills.concat(Array.isArray(content) ? content : [content]);
+      const skillsArr = Array.isArray(content) ? content
+        : Array.isArray(content.skills) ? content.skills
+        : [content];
+      allSkills = allSkills.concat(skillsArr);
     }
 
-    return allSkills;
+    return dedupeById(allSkills);
   } catch (error) {
     console.error('Error loading prebuilt skills:', error.message);
     return [];
@@ -224,35 +227,99 @@ async function exportAsProjectTemplate(projectName) {
 
 // Priority-ordered file list — domain-agnostic skills first, specialised last
 const DEFAULT_SKILL_FILES = [
+  // Core quality (always loaded)
   'workflow-skills.json',
   'code-quality-security.json',
   'testing-verification.json',
   'architecture-design.json',
   'devops-git.json',
+
+  // Web fundamentals
+  'html-css-web.json',
+  'javascript-modern.json',
   'frontend-guidelines.json',
   'senior-ui-architect-core.json',
-  'nextjs-performance.json',
+
+  // React ecosystem
   'react-best-practices.json',
+  'react-advanced.json',
+  'react-19-patterns.json',
+
+  // TypeScript
+  'typescript-strict-patterns.json',
+
+  // Next.js
+  'nextjs-app-router.json',
+  'nextjs-performance.json',
+
+  // UI library + styling
+  'shadcn-tailwind-ui.json',
+
+  // State management
+  'state-management-modern.json',
+
+  // APIs
+  'nodejs-api-patterns.json',
+
+  // Testing
+  'web-testing-modern.json',
+
+  // Security + accessibility
   'security-nfr.json',
+  'web-accessibility-a11y.json',
+
+  // Build tooling
+  'vite-build-tooling.json',
 ];
+
+/**
+ * Deduplicate skills by id — last-write-wins (earlier files take priority here via filter).
+ * @param {Array} skills
+ * @returns {Array}
+ */
+function dedupeById(skills) {
+  const seen = new Set();
+  return skills.filter(s => s.id && !seen.has(s.id) && seen.add(s.id));
+}
 
 function loadFile(filename) {
   try {
     const filePath = path.join(PREBUILT_SKILLS_DIR, filename);
     if (!require('fs').existsSync(filePath)) return [];
-    const content = require(filePath);
-    return Array.isArray(content) ? content : [content];
+    const raw = require('fs').readFileSync(filePath, 'utf8');
+    const content = JSON.parse(raw);
+    const arr = Array.isArray(content) ? content : Array.isArray(content.skills) ? content.skills : [content];
+    return arr;
   } catch {
     return [];
   }
 }
 
 /**
- * Merge all default skill files in priority order (~110 skills across 10 domains).
- * @returns {Array} All default skills
+ * Merge all default skill files in priority order and deduplicate by id.
+ * Also loads any fetched remote skills cached in skills/prebuilt/fetched/.
+ * @returns {Array} All default skills (deduplicated)
  */
 function getAllDefaultSkills() {
-  return DEFAULT_SKILL_FILES.flatMap(loadFile);
+  const base = DEFAULT_SKILL_FILES.flatMap(loadFile);
+
+  // Also load on-demand fetched skills if present
+  const fetchedDir = path.join(PREBUILT_SKILLS_DIR, 'fetched');
+  let fetched = [];
+  try {
+    if (require('fs').existsSync(fetchedDir)) {
+      const files = require('fs').readdirSync(fetchedDir).filter(f => f.endsWith('.json'));
+      fetched = files.flatMap(f => {
+        try {
+          const raw = require('fs').readFileSync(path.join(fetchedDir, f), 'utf8');
+          const content = JSON.parse(raw);
+          return Array.isArray(content) ? content : Array.isArray(content.skills) ? content.skills : [];
+        } catch { return []; }
+      });
+    }
+  } catch { /* fetched dir may not exist */ }
+
+  return dedupeById([...base, ...fetched]);
 }
 
 module.exports = {

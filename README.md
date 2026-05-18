@@ -1,6 +1,6 @@
 # SkillBrain
 
-[![npm version](https://img.shields.io/npm/v/skill-brain)](https://www.npmjs.com/package/skill-brain)
+[![npm version](https://img.shields.io/npm/v/%40snpanigrahi88%2Fskill-brain)](https://www.npmjs.com/package/@snpanigrahi88/skill-brain)
 [![CI](https://github.com/sachidananda-panigrahi/skill-brain/actions/workflows/skill-review.yml/badge.svg)](https://github.com/sachidananda-panigrahi/skill-brain/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sachidananda-panigrahi/skill-brain/blob/main/LICENSE)
 
@@ -13,7 +13,7 @@ RAG-powered skill engine for AI code assistants, exposed via **Model Context Pro
 npx skill-brain start
 
 # Global install
-npm install -g skill-brain
+npm install -g @snpanigrahi88/skill-brain
 skill-brain start
 ```
 
@@ -24,23 +24,40 @@ For full setup docs see [docs/QUICKSTART.md](docs/QUICKSTART.md).
 ## Features
 
 - **TOON-weighted RAG** — TOON (Token-Oriented Object Notation) field-weighting boosts name/tag matches 3×/2× over template content for sharper search results
-- **110+ default skills** — Development Workflow, Code Quality & Security, Testing & Verification, Architecture & Design, DevOps & Git, and 38 Frontend Development Guidelines (React, CSS, HTML5, global principles)
+- **191 default skills across 33 domains** — 24 prebuilt skill files bundled offline: TypeScript patterns, React 19, state management, web accessibility, Vite tooling, and more
+- **Zero-config SKILLS.md generator** — Run `npx skill-brain init` to auto-detect your tech stack and generate a project-local SKILLS.md (Claude Code, Cursor, Copilot Chat, and Repomix all read it)
+- **On-demand skill fetching** — Run `npx skill-brain fetch --stack=nextjs,react` to fetch additional skills from vercel-labs/agent-skills (cached locally, no network during normal operation)
 - **AST-based code analysis** — Babel parses JS/TS/JSX/TSX; Vue SFCs split into script/template/style blocks
 - **Config file analysis** — .env secrets, Dockerfile root users, GitHub Actions permissions, tsconfig strict mode
 - **File naming validation** — enforces PascalCase components, camelCase hooks, kebab-case utilities
 - **Repomix integration** — gitignore-aware file collection, Secretlint security pre-check, token budget annotation, remote repo scanning
 - **TF-IDF semantic search** — find skills by meaning, zero config required
 - **Optional OpenAI embeddings** — disk-cached dense vector search (skips re-embedding unchanged skills)
-- **Dual-tier storage** — global `common.json` + per-project JSON files
-- **REST API** — full CRUD + search + similar skills endpoints
+- **Dual-tier storage** — global `common.json` + per-project JSON files, plus auto-exported SKILLS.md in user projects
+- **REST API** — full CRUD + search + similar skills endpoints, plus skill export and markdown generation
 - **MCP support** — stdio + HTTP; auto-connects to Cursor (`.cursor/mcp.json`) and Continue (`.continue/config.json`)
 - **VSCode auto-start** — MCP server starts when workspace opens (`runOn: folderOpen`)
 - **Dashboard** — SPA with semantic search, project scanning, and integration guides
 
 ## Quick Start
 
+### For End Users (Zero Config)
+
 ```bash
-# Install
+# Generate SKILLS.md for your project (auto-detects tech stack)
+npx skill-brain init
+
+# Start the server (if you want the dashboard or MCP integration)
+npx skill-brain start
+# → http://localhost:3000/dashboard
+```
+
+### For Development
+
+```bash
+# Clone and install
+git clone https://github.com/sachidananda-panigrahi/skill-brain.git
+cd skill-brain
 pnpm install    # or: npm install
 
 # Start server
@@ -54,7 +71,22 @@ npm run dev
 npm test
 ```
 
-## Scan a Project
+## Generate Skills for Your Project
+
+### No-Config (Recommended)
+
+```bash
+# Auto-detects tech stack and generates SKILLS.md
+npx skill-brain init [path]
+
+# Custom output path
+npx skill-brain init --output=./docs/SKILLS.md
+
+# Generate as JSON instead
+npx skill-brain init --format=json
+```
+
+### Scan a Project (Manual Indexing)
 
 **Via dashboard:** Open the dashboard → Scan Project → enter absolute path → Start Scan
 
@@ -67,7 +99,7 @@ curl -X POST http://localhost:3000/api/scan \
 
 **Via CLI:**
 ```bash
-node scanProject.js --path=/absolute/path/to/your/project
+node src/engines/scanProject.js --path=/absolute/path/to/your/project
 ```
 
 ## Model Context Protocol (MCP)
@@ -105,7 +137,7 @@ Add this to your `claude_desktop_config.json` or `.cursor/mcp.json`:
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+      "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
     }
   }
 }
@@ -160,6 +192,8 @@ Browser / MCP Client
 | `POST` | `/api/skills` | Create skill |
 | `PUT` | `/api/skills/:id` | Update skill |
 | `DELETE` | `/api/skills/:id` | Delete skill |
+| `POST` | `/api/skills/export/markdown` | Regenerate all registered SKILLS.md files |
+| `GET` | `/api/skills/export/status` | List registered SKILLS.md paths + timestamps |
 | `POST` | `/api/scan` | Scan a project |
 | `GET` | `/mcp?project=` | MCP discovery |
 
@@ -205,8 +239,8 @@ SkillBrain now publishes from GitHub Actions when you push a semantic tag.
 
 ### Publish Targets
 
-- npm: `skill-brain`
-- GitHub Packages: `@<github-owner>/skill-brain`
+- npm: `@snpanigrahi88/skill-brain`
+- GitHub Packages: `@snpanigrahi88/skill-brain`
 
 ### One-time Setup
 
@@ -221,14 +255,30 @@ SkillBrain now publishes from GitHub Actions when you push a semantic tag.
 ### Release Steps
 
 ```bash
-# 1) Update version
-npm version patch
+# 1) Set prerelease version (example)
+npm version 0.0.1-alpha --no-git-tag-version
 
-# 2) Push commit and tag
+# 2) Run release quality gates
+npm run validate:release
+
+# 3) Validate package payload
+npm run publish:dry-run
+
+# 4) Publish alpha without affecting latest
+npm run publish:alpha
+
+# 5) If publishing via CI tags, push commit and tag
+git tag v0.0.1-alpha
 git push origin main --follow-tags
 ```
 
-The release workflow validates tag format, verifies tag version equals `package.json`, runs tests, performs a dry-run publish, then publishes to npm and GitHub Packages.
+The release workflow validates tag format, verifies tag version equals `package.json`, runs lint, tests, npm audit, performs a dry-run publish, then publishes to npm and GitHub Packages.
+
+If your npm account enforces 2FA for writes, publish with OTP:
+
+```bash
+npm publish --tag alpha --access public --otp <code>
+```
 
 ### Install from GitHub Packages
 
@@ -255,16 +305,25 @@ npm install @<github-owner>/skill-brain --registry=https://npm.pkg.github.com
 
 ```
 skill-brain/
-├── index.js            # Express server entry point
-├── apiSkills.js        # REST API router (CRUD + search + similar)
-├── skillEngine.js      # JSON storage abstraction
-├── scanProject.js      # Project scanner (orchestrates AST + regex)
-├── astAnalyzer.js      # Babel AST single-pass analyzer
-├── regexFallback.js    # Regex pattern/anti-pattern detection
-├── ragIndex.js         # Dirty-flag RAG cache (TF-IDF / embeddings)
-├── tfidf.js            # Pure TF-IDF cosine similarity engine
-├── embeddings.js       # Optional OpenAI embeddings wrapper
-├── test_e2e.js         # 15 E2E tests
+├── bin/
+│   └── skill-brain.js  # Public CLI wrapper
+├── src/
+│   ├── api/
+│   │   └── apiSkills.js
+│   ├── engines/
+│   │   ├── scanProject.js
+│   │   ├── skillEngine.js
+│   │   ├── ragIndex.js
+│   │   └── tfidf.js
+│   ├── entry-points/
+│   │   ├── index.js    # Express server entry point
+│   │   ├── mcp-server.js
+│   │   └── test_e2e.js # E2E test runner
+│   ├── parsers/
+│   │   ├── astAnalyzer.js
+│   │   └── regexFallback.js
+│   └── utils/
+│       └── embeddings.js
 ├── public/
 │   └── dashboard.html  # SPA dashboard
 ├── skills/

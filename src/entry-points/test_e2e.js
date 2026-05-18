@@ -1,4 +1,5 @@
 const { spawn } = require('child_process');
+const path = require('path');
 
 const PORT = 3001;
 const BASE_URL = `http://localhost:${PORT}`;
@@ -9,7 +10,7 @@ let failed = 0;
 async function runTests() {
   console.log('Starting E2E tests...\n');
 
-  const server = spawn('node', ['src/entry-points/index.js'], {
+  const server = spawn(process.execPath, [path.join(__dirname, 'index.js')], {
     env: { ...process.env, PORT },
     stdio: 'pipe'
   });

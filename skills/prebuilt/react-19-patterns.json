@@ -1,0 +1,64 @@
+{
+  "skills": [
+    {
+      "id": "react-19-use-hook",
+      "name": "React 19 use() Hook — Promises and Context",
+      "description": "use() unwraps Promises and Context values inside render. Suspends automatically for async data, replaces useContext in certain patterns.",
+      "category": "pattern",
+      "domain": "React 19",
+      "severity": "medium",
+      "tags": ["react-19", "use", "suspense", "promises", "context"],
+      "template": "## React 19 `use()` Hook\n\n### Unwrap a Promise (suspends automatically)\n```tsx\nimport { use, Suspense } from 'react';\n\n// Pass a promise (NOT called inside component — created outside or cached)\nfunction UserCard({ userPromise }: { userPromise: Promise<User> }) {\n  const user = use(userPromise); // suspends until resolved\n  return <div>{user.name}</div>;\n}\n\nfunction Page() {\n  const userPromise = fetchUser('1'); // created in Server Component or stable ref\n  return (\n    <Suspense fallback={<Skeleton />}>\n      <UserCard userPromise={userPromise} />\n    </Suspense>\n  );\n}\n```\n\n### Unwrap Context (conditionally, unlike useContext)\n```tsx\nimport { use } from 'react';\n\nfunction Button({ children }) {\n  // use() can be called in conditionals/loops — useContext cannot\n  if (someCondition) {\n    const theme = use(ThemeContext);\n    return <button className={theme.btn}>{children}</button>;\n  }\n  return <button>{children}</button>;\n}\n```\n\n**Key rules:**\n- `use()` can be called conditionally — `useContext`/`useState` cannot\n- Promise passed to `use()` must be stable (don't create inline in render)\n- Always pair with `<Suspense>` and `<ErrorBoundary>`"
+    },
+    {
+      "id": "react-19-use-action-state",
+      "name": "useActionState — Form Actions with State",
+      "description": "useActionState (replaces useFormState) manages form action state including pending, errors, and return values. Works with Server Actions.",
+      "category": "pattern",
+      "domain": "React 19",
+      "severity": "high",
+      "tags": ["react-19", "useActionState", "forms", "server-actions", "progressive-enhancement"],
+      "template": "## `useActionState`\n\n### With Server Action (Next.js App Router)\n```ts\n// actions/user.ts\n'use server';\nimport { z } from 'zod';\n\ntype State = { errors?: { name?: string[]; email?: string[] }; message?: string } | null;\n\nexport async function createUser(prevState: State, formData: FormData): Promise<State> {\n  const result = schema.safeParse(Object.fromEntries(formData));\n  if (!result.success) return { errors: result.error.flatten().fieldErrors };\n  await db.users.create({ data: result.data });\n  return { message: 'User created' };\n}\n```\n\n```tsx\n// components/CreateUserForm.tsx\n'use client';\nimport { useActionState } from 'react';\nimport { createUser } from '@/actions/user';\n\nexport function CreateUserForm() {\n  const [state, action, isPending] = useActionState(createUser, null);\n\n  return (\n    <form action={action}>  {/* native form action — works without JS */}\n      <input name=\"name\" aria-invalid={!!state?.errors?.name} />\n      {state?.errors?.name && <p>{state.errors.name[0]}</p>}\n\n      <input name=\"email\" type=\"email\" aria-invalid={!!state?.errors?.email} />\n      {state?.errors?.email && <p>{state.errors.email[0]}</p>}\n\n      <button disabled={isPending}>\n        {isPending ? 'Creating...' : 'Create User'}\n      </button>\n      {state?.message && <p>{state.message}</p>}\n    </form>\n  );\n}\n```\n\n**Why:** Progressive enhancement — form works without JS. `isPending` gives instant feedback."
+    },
+    {
+      "id": "react-19-use-optimistic",
+      "name": "useOptimistic — Instant UI Updates",
+      "description": "useOptimistic applies optimistic UI state during async operations and automatically reverts to actual state when the operation completes.",
+      "category": "pattern",
+      "domain": "React 19",
+      "severity": "medium",
+      "tags": ["react-19", "useOptimistic", "optimistic-ui", "ux"],
+      "template": "## `useOptimistic`\n\n```tsx\n'use client';\nimport { useOptimistic, useTransition } from 'react';\nimport { toggleTodo } from '@/actions/todos';\n\nfunction TodoList({ todos }: { todos: Todo[] }) {\n  const [optimisticTodos, setOptimisticTodos] = useOptimistic(\n    todos,\n    (currentTodos, updatedId: string) =>\n      currentTodos.map(t => t.id === updatedId ? { ...t, done: !t.done } : t)\n  );\n\n  const [isPending, startTransition] = useTransition();\n\n  function handleToggle(id: string) {\n    startTransition(async () => {\n      setOptimisticTodos(id);   // apply optimistic update immediately\n      await toggleTodo(id);     // actual server action\n      // On complete: optimisticTodos reverts to real `todos` prop\n    });\n  }\n\n  return (\n    <ul>\n      {optimisticTodos.map(todo => (\n        <li key={todo.id} style={{ opacity: isPending ? 0.7 : 1 }}>\n          <button onClick={() => handleToggle(todo.id)}>\n            {todo.done ? '✓' : '○'} {todo.text}\n          </button>\n        </li>\n      ))}\n    </ul>\n  );\n}\n```\n\n**How it works:**\n1. `useOptimistic` shows the optimistic value during the transition\n2. When the parent re-renders with new `todos` (from `revalidatePath`), the optimistic state is discarded\n3. If the Server Action throws, React automatically reverts to the previous state"
+    },
+    {
+      "id": "react-19-use-transition-mutations",
+      "name": "useTransition for Non-Blocking Mutations",
+      "description": "Wrap async mutations in startTransition to keep the UI responsive during Server Action calls. Replaces manual isPending state.",
+      "category": "pattern",
+      "domain": "React 19",
+      "severity": "medium",
+      "tags": ["react-19", "useTransition", "startTransition", "concurrency", "mutations"],
+      "template": "## `useTransition` for Mutations\n\n```tsx\n'use client';\nimport { useTransition } from 'react';\nimport { deleteUser } from '@/actions/users';\nimport { useRouter } from 'next/navigation';\n\nfunction DeleteButton({ userId }: { userId: string }) {\n  const [isPending, startTransition] = useTransition();\n  const router = useRouter();\n\n  function handleDelete() {\n    startTransition(async () => {\n      await deleteUser(userId);\n      router.push('/users');   // navigation inside transition = non-blocking\n    });\n  }\n\n  return (\n    <button onClick={handleDelete} disabled={isPending}>\n      {isPending ? 'Deleting...' : 'Delete'}\n    </button>\n  );\n}\n```\n\n### useTransition vs useActionState\n| Feature | `useTransition` | `useActionState` |\n|---------|----------------|------------------|\n| Manages pending state | ✅ | ✅ |\n| Returns action errors/data | ❌ | ✅ |\n| Native `<form action={}>` | ❌ | ✅ |\n| Progressive enhancement | ❌ | ✅ |\n| Multiple actions | ✅ | ❌ |\n\n**Rule:** Use `useActionState` for forms. Use `useTransition` for non-form mutations (button clicks, drag-drop, etc.)."
+    },
+    {
+      "id": "react-compiler",
+      "name": "React Compiler — Auto-Memoization",
+      "description": "React Compiler (RC) automatically memoizes components and values. Removes need for useMemo/useCallback in most cases. Requires Rules of React compliance.",
+      "category": "pattern",
+      "domain": "React 19",
+      "severity": "medium",
+      "tags": ["react-19", "react-compiler", "memoization", "performance", "babel"],
+      "template": "## React Compiler\n\n### Setup (Next.js 15+)\n```bash\nnpm install -D babel-plugin-react-compiler\n```\n\n```ts\n// next.config.ts\nexport default {\n  experimental: { reactCompiler: true },\n};\n```\n\n### What it replaces\n```tsx\n// BEFORE compiler\nconst expensiveValue = useMemo(() => compute(a, b), [a, b]);\nconst handleClick   = useCallback(() => onClick(id), [id, onClick]);\nconst MemoChild     = memo(ChildComponent);\n\n// AFTER compiler — just write normal code\nconst expensiveValue = compute(a, b); // compiler memoizes automatically\nconst handleClick   = () => onClick(id);\nfunction ChildComponent(props) { ... } // compiler decides if memo needed\n```\n\n### Rules of React (required for compiler)\n```tsx\n// WRONG — mutation in render\nfunction Bad({ items }) {\n  items.push('new'); // mutates prop — compiler can't optimize\n  return <List items={items} />;\n}\n\n// CORRECT — new array\nfunction Good({ items }) {\n  const updated = [...items, 'new'];\n  return <List items={updated} />;\n}\n```\n\n### Escape hatch\n```tsx\nfunction LegacyComponent() {\n  'use no memo';  // opt out this component from compiler optimization\n  // use when: third-party libs that depend on reference equality tricks\n}\n```\n\n**Adoption:** Start with `eslint-plugin-react-compiler` to find violations, fix, then enable compiler."
+    },
+    {
+      "id": "rsc-mental-model",
+      "name": "React Server Components Mental Model",
+      "description": "RSC renders on the server, has zero client JS. Push data fetching to the deepest component that needs it. Never pass server-only data through Client Components.",
+      "category": "architecture",
+      "domain": "React 19",
+      "severity": "critical",
+      "tags": ["rsc", "server-components", "nextjs", "architecture", "data-fetching"],
+      "template": "## RSC Mental Model\n\n### The two trees\n```\nServer tree (zero client JS)     Client tree ('use client')\n─────────────────────────────    ──────────────────────────\nLayout (server)                  InteractiveNav (client)\n  ├─ Nav (server)                  useState, useEffect OK\n  ├─ Sidebar (server)              event handlers OK\n  └─ Page (server)                 browser APIs OK\n       └─ ProductCard (server)     \n            └─ AddToCart (client)  ← leaf-level interactivity\n```\n\n### Data fetching at the leaf\n```tsx\n// WRONG — fetching in root, prop-drilling data down\nasync function Page() {\n  const user = await getUser();\n  return <Layout user={user}><Content user={user} /></Layout>;\n}\n\n// CORRECT — each component fetches what IT needs\nasync function UserAvatar({ userId }: { userId: string }) {\n  const user = await getUser(userId); // fetch exactly here\n  return <img src={user.avatar} alt={user.name} />;\n}\n// Parallel fetches — Next.js deduplicates via fetch cache\n```\n\n### Passing Server Components INTO Client Components\n```tsx\n// CORRECT — children prop threads server output through client\n'use client';\nfunction Carousel({ children }) {  // children = Server Component output\n  const [idx, setIdx] = useState(0);\n  return <div>{children[idx]}</div>;\n}\n\n// page.tsx (Server Component)\n<Carousel>\n  {items.map(item => <ItemCard key={item.id} data={item} />)}\n</Carousel>\n```\n\n**Rule:** `'use client'` marks a boundary, not a single component. Everything below it is also a Client Component unless explicitly re-imported as server."
+    }
+  ]
+}

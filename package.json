@@ -1,5 +1,5 @@
 {
-  "name": "skill-brain",
+  "name": "@snpanigrahi88/skill-brain",
   "version": "1.1.0",
   "description": "RAG-powered skill engine for AI code assistants, exposed via MCP",
   "license": "MIT",
@@ -31,6 +31,9 @@
   "scripts": {
     "start": "node src/entry-points/index.js",
     "dev": "nodemon src/entry-points/index.js",
+    "lint": "node scripts/check-syntax.js",
+    "audit": "pnpm audit --audit-level moderate",
+    "validate:release": "npm run lint && npm test && npm run audit",
     "scan": "node src/engines/scanProject.js",
     "scan:add": "node src/engines/scanProject.js --mode=add --path=.",
     "review": "node src/engines/scanProject.js --review",
@@ -38,9 +41,10 @@
     "mcp": "node src/entry-points/mcp-server.js",
     "test": "node src/entry-points/test_e2e.js",
     "test:e2e": "node src/entry-points/test_e2e.js",
-    "prepack": "npm test",
-    "prepublishOnly": "npm test",
-    "publish:dry-run": "npm publish --dry-run"
+    "prepack": "npm run validate:release",
+    "prepublishOnly": "npm run validate:release",
+    "publish:dry-run": "npm publish --dry-run",
+    "generate:skills": "node bin/skill-brain.js init"
   },
   "keywords": [
     "mcp",
@@ -68,8 +72,11 @@
     "@babel/traverse": "^7.25.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "fs-extra": "^11.3.5",
-    "repomix": "^0.3.0"
+    "fs-extra": "^11.3.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

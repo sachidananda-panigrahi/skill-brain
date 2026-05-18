@@ -1,0 +1,84 @@
+{
+  "skills": [
+    {
+      "id": "ts-strict-mode-config",
+      "name": "TypeScript Strict Mode Configuration",
+      "description": "Configure TypeScript with strict mode flags for maximum type safety. Strict mode catches entire classes of bugs at compile time.",
+      "category": "enforcement",
+      "domain": "TypeScript",
+      "severity": "critical",
+      "tags": ["typescript", "strict", "tsconfig", "configuration"],
+      "template": "## TypeScript Strict Mode\n\n```json\n// tsconfig.json — recommended strict config\n{\n  \"compilerOptions\": {\n    \"strict\": true,                        // enables all strict* flags\n    \"noUncheckedIndexedAccess\": true,      // arr[0] is T | undefined, not T\n    \"exactOptionalPropertyTypes\": true,    // { a?: string } !== { a: string | undefined }\n    \"noImplicitReturns\": true,\n    \"noFallthroughCasesInSwitch\": true,\n    \"noPropertyAccessFromIndexSignature\": true,\n    \"allowUnusedLabels\": false,\n    \"allowUnreachableCode\": false\n  }\n}\n```\n\n`strict: true` enables:\n- `strictNullChecks` — `null`/`undefined` not assignable to non-nullable types\n- `strictFunctionTypes` — function parameter contravariance\n- `strictBindCallApply` — typed `bind`/`call`/`apply`\n- `strictPropertyInitialization` — class properties must be initialized\n- `noImplicitAny` — prohibits implicit `any`\n- `noImplicitThis` — `this` must be typed\n\n**Incremental adoption:** add `// @ts-strict-ignore` per file when migrating a legacy codebase."
+    },
+    {
+      "id": "ts-unknown-over-any",
+      "name": "unknown vs any — Safe Error and External Data Handling",
+      "description": "Use unknown instead of any for external data, error catches, and API responses. Narrows safely with type guards before use.",
+      "category": "enforcement",
+      "domain": "TypeScript",
+      "severity": "high",
+      "tags": ["typescript", "unknown", "any", "type-guards", "error-handling"],
+      "template": "## `unknown` vs `any`\n\n```ts\n// WRONG — any disables type checking\ncatch (e: any) { console.log(e.message); }\n\n// CORRECT — unknown forces narrowing\ncatch (e: unknown) {\n  const msg = e instanceof Error ? e.message : String(e);\n  console.error(msg);\n}\n```\n\n### API / external data\n```ts\n// WRONG\nconst data: any = await res.json();\ndata.user.name; // no type safety\n\n// CORRECT — validate at boundary with Zod\nimport { z } from 'zod';\nconst schema = z.object({ user: z.object({ name: z.string() }) });\nconst data = schema.parse(await res.json()); // throws on mismatch\ndata.user.name; // fully typed\n```\n\n### Type guard pattern\n```ts\nfunction isRecord(v: unknown): v is Record<string, unknown> {\n  return typeof v === 'object' && v !== null && !Array.isArray(v);\n}\n```\n\n**Rule:** `any` only in: declaration files, auto-generated code, or documented escape hatches."
+    },
+    {
+      "id": "ts-discriminated-unions",
+      "name": "Discriminated Unions for State Machines",
+      "description": "Model mutually exclusive states with discriminated unions. TypeScript narrows exhaustively, eliminating impossible-state bugs.",
+      "category": "pattern",
+      "domain": "TypeScript",
+      "severity": "high",
+      "tags": ["typescript", "discriminated-union", "state-machine", "pattern", "narrowing"],
+      "template": "## Discriminated Unions\n\n```ts\n// WRONG — independent booleans allow impossible states\ninterface State { loading: boolean; data?: User; error?: string; }\n\n// CORRECT — one discriminant, mutually exclusive states\ntype AsyncState<T> =\n  | { status: 'idle' }\n  | { status: 'loading' }\n  | { status: 'success'; data: T }\n  | { status: 'error';   error: string };\n\ntype UserState = AsyncState<User>;\n```\n\n### Usage with exhaustive check\n```ts\nfunction render(state: UserState) {\n  switch (state.status) {\n    case 'idle':    return <Placeholder />;\n    case 'loading': return <Spinner />;\n    case 'success': return <Profile user={state.data} />; // data typed as User\n    case 'error':   return <ErrorBanner msg={state.error} />;\n    default: {\n      const _exhaustive: never = state; // compile error if case missing\n      return null;\n    }\n  }\n}\n```\n\n### API response union\n```ts\ntype ApiResult<T> =\n  | { ok: true;  data: T }\n  | { ok: false; error: string; statusCode: number };\n\nasync function fetchUser(id: string): Promise<ApiResult<User>> { ... }\n\nconst result = await fetchUser('1');\nif (result.ok) {\n  result.data; // User — no need to check for undefined\n} else {\n  result.error; // string\n}\n```"
+    },
+    {
+      "id": "ts-generic-constraints",
+      "name": "Generic Constraints and Conditional Types",
+      "description": "Write reusable, type-safe generics with extends constraints and conditional types. Avoid unsafe overloads.",
+      "category": "pattern",
+      "domain": "TypeScript",
+      "severity": "medium",
+      "tags": ["typescript", "generics", "constraints", "conditional-types", "infer"],
+      "template": "## Generics + Constraints\n\n```ts\n// Basic constraint\nfunction getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key]; // typed return, no casting\n}\n\n// Multiple constraints\nfunction merge<A extends object, B extends object>(a: A, b: B): A & B {\n  return { ...a, ...b };\n}\n\n// Default generic parameter\nfunction createState<T = string>() { ... }\n```\n\n### Conditional types + `infer`\n```ts\n// Extract promise value type\ntype Awaited<T> = T extends Promise<infer U> ? U : T;\n\n// Extract array element type\ntype ElementOf<T> = T extends (infer E)[] ? E : never;\n\n// Unwrap function return\ntype ReturnOf<T> = T extends (...args: unknown[]) => infer R ? R : never;\n```\n\n### Mapped types\n```ts\n// Make all keys optional + nullable\ntype Nullable<T> = { [K in keyof T]: T[K] | null };\n\n// Make specific keys required\ntype RequireFields<T, K extends keyof T> = T & Required<Pick<T, K>>;\n\n// Usage\ntype CreateUserInput = RequireFields<Partial<User>, 'email'>;\n```"
+    },
+    {
+      "id": "ts-utility-types",
+      "name": "Built-in Utility Types",
+      "description": "Use TypeScript's built-in utility types to avoid hand-writing redundant type transformations.",
+      "category": "pattern",
+      "domain": "TypeScript",
+      "severity": "medium",
+      "tags": ["typescript", "utility-types", "Partial", "Pick", "Omit", "ReturnType"],
+      "template": "## TypeScript Utility Types\n\n```ts\ninterface User {\n  id: string;    name: string;\n  email: string; role: 'admin' | 'user';\n  createdAt: Date;\n}\n\n// Partial<T> — all props optional (update DTOs)\ntype UpdateUserInput = Partial<User>;\n\n// Required<T> — all props required\ntype FullUser = Required<User>;\n\n// Pick<T, K> — select subset\ntype UserCard = Pick<User, 'id' | 'name' | 'role'>;\n\n// Omit<T, K> — exclude keys\ntype CreateUserInput = Omit<User, 'id' | 'createdAt'>;\n\n// Readonly<T> — immutable\ntype ImmutableUser = Readonly<User>;\n\n// Record<K, V> — typed map\ntype RolePermissions = Record<User['role'], string[]>;\n\n// Extract / Exclude on unions\ntype AdminRole = Extract<User['role'], 'admin'>;  // 'admin'\ntype NonAdmin  = Exclude<User['role'], 'admin'>;  // 'user'\n\n// ReturnType / Parameters\nfunction fetchUser(id: string): Promise<User> { ... }\ntype FetchReturn   = Awaited<ReturnType<typeof fetchUser>>; // User\ntype FetchParams   = Parameters<typeof fetchUser>;          // [string]\n\n// NonNullable\ntype SafeUser = NonNullable<User | null | undefined>; // User\n```"
+    },
+    {
+      "id": "ts-satisfies-operator",
+      "name": "satisfies Operator — Type-checked Literals",
+      "description": "Use satisfies to validate a value against a type while keeping the literal type. Avoids widening that loses specific values.",
+      "category": "pattern",
+      "domain": "TypeScript",
+      "severity": "medium",
+      "tags": ["typescript", "satisfies", "literal-types", "type-widening"],
+      "template": "## `satisfies` Operator (TS 4.9+)\n\n### Problem: type annotation widens\n```ts\nconst palette: Record<string, string[]> = {\n  red: ['#ff0000', '#cc0000'],\n};\npalette.red;        // string[] — lost tuple info\npalette.nonexistent; // allowed — no error!\n```\n\n### Solution: `satisfies` validates without widening\n```ts\nconst palette = {\n  red:   ['#ff0000', '#cc0000'],\n  green: ['#00ff00'],\n  blue:  '#0000ff',           // string, not array — still valid\n} satisfies Record<string, string | string[]>;\n\npalette.red;        // string[] — literal type preserved\npalette.nonexistent; // ERROR — key not in object\npalette.blue.toUpperCase(); // OK — string methods available\n```\n\n### Route config pattern\n```ts\nconst routes = {\n  home:    { path: '/',        auth: false },\n  profile: { path: '/profile', auth: true  },\n} satisfies Record<string, { path: string; auth: boolean }>;\n\nroutes.home.path;   // '/'\nroutes.missing;     // ERROR\n```\n\n**Rule:** Prefer `satisfies` over `as` when you want type validation but need the literal type preserved."
+    },
+    {
+      "id": "ts-template-literal-types",
+      "name": "Template Literal Types",
+      "description": "Use template literal types to type event names, CSS class names, API paths, and other string patterns at the type level.",
+      "category": "pattern",
+      "domain": "TypeScript",
+      "severity": "medium",
+      "tags": ["typescript", "template-literal-types", "string-patterns", "events"],
+      "template": "## Template Literal Types\n\n```ts\n// Event name pattern\ntype EventName<T extends string> = `on${Capitalize<T>}`;\ntype ButtonEvent = EventName<'click' | 'focus' | 'blur'>;\n// 'onClick' | 'onFocus' | 'onBlur'\n\n// API path typing\ntype HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';\ntype ApiRoute   = `/api/${string}`;\nfunction request(method: HttpMethod, route: ApiRoute) { ... }\nrequest('GET',  '/api/users');   // OK\nrequest('GONE', '/api/users');   // ERROR — method\nrequest('GET',  '/users');       // ERROR — missing /api prefix\n\n// CSS class combiner\ntype Size  = 'sm' | 'md' | 'lg';\ntype Color = 'red' | 'blue' | 'green';\ntype BtnClass = `btn-${Size}` | `text-${Color}`;\n\n// Intrinsic string manipulation\ntype ToGetterName<K extends string> = `get${Capitalize<K>}`;\ntype UserGetters = { [K in keyof User as ToGetterName<K>]: () => User[K] };\n// { getId: () => string; getName: () => string; ... }\n\n// Environment variable safety\ntype EnvKey = 'DATABASE_URL' | 'API_KEY' | 'PORT';\ntype EnvVars = Record<EnvKey, string>;\n```"
+    },
+    {
+      "id": "ts-readonly-immutability",
+      "name": "Readonly and as const for Immutability",
+      "description": "Use Readonly<T>, as const, and ReadonlyArray to enforce immutability in TypeScript, preventing accidental mutation.",
+      "category": "enforcement",
+      "domain": "TypeScript",
+      "severity": "medium",
+      "tags": ["typescript", "readonly", "as-const", "immutability", "freeze"],
+      "template": "## Immutability Patterns\n\n```ts\n// Readonly interface\ninterface Config {\n  readonly apiUrl: string;\n  readonly timeout: number;\n}\n\n// Readonly<T> utility\nfunction processUser(user: Readonly<User>) {\n  user.name = 'foo'; // ERROR — cannot assign to readonly\n  return { ...user, name: 'foo' }; // CORRECT — new object\n}\n\n// ReadonlyArray<T>\nfunction sum(nums: ReadonlyArray<number>): number {\n  nums.push(1);   // ERROR\n  nums.sort();    // ERROR\n  return nums.reduce((a, b) => a + b, 0);\n}\n\n// as const — literal type narrowing\nconst ROLES = ['admin', 'user', 'guest'] as const;\ntype Role = typeof ROLES[number]; // 'admin' | 'user' | 'guest'\n\nconst CONFIG = {\n  baseUrl: '/api',\n  version: 2,\n} as const;\ntype ConfigKeys = keyof typeof CONFIG; // 'baseUrl' | 'version'\nCONFIG.version; // type: 2 (not number)\n\n// Deep readonly (use with caution — utility type)\ntype DeepReadonly<T> = {\n  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];\n};\n```"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "skills": [
+    {
+      "id": "vite-config-patterns",
+      "name": "vite.config.ts — Essential Configuration Patterns",
+      "description": "Core vite.config.ts setup: path aliases, env prefixes, proxy, and plugin composition.",
+      "category": "pattern",
+      "domain": "Vite & Build Tooling",
+      "severity": "medium",
+      "tags": ["vite", "config", "aliases", "proxy", "plugins"],
+      "template": "## vite.config.ts Patterns\n\n```ts\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react-swc';  // SWC for fast HMR\nimport path from 'node:path';\n\nexport default defineConfig({\n  plugins: [react()],\n\n  // Path aliases — keep in sync with tsconfig.json paths\n  resolve: {\n    alias: {\n      '@': path.resolve(__dirname, './src'),\n      '@ui': path.resolve(__dirname, './src/components/ui'),\n      '@lib': path.resolve(__dirname, './src/lib'),\n    },\n  },\n\n  // Only expose vars prefixed with VITE_ to client\n  envPrefix: 'VITE_',\n\n  // Dev server proxy — avoids CORS in development\n  server: {\n    port: 3000,\n    proxy: {\n      '/api': {\n        target: 'http://localhost:4000',\n        changeOrigin: true,\n        rewrite: (path) => path.replace(/^\\/api/, ''),\n      },\n    },\n  },\n\n  // Build output\n  build: {\n    outDir: 'dist',\n    sourcemap: true,  // always; strip in CI with sourcemap:false for prod\n    target: 'es2020',\n  },\n\n  // Align with tsconfig.json paths\n  // tsconfig.json: { \"paths\": { \"@/*\": [\"./src/*\"] } }\n});\n```"
+    },
+    {
+      "id": "vite-code-splitting",
+      "name": "Code Splitting and Lazy Loading in Vite",
+      "description": "Route-based code splitting with React.lazy, manual chunks for vendor libraries, and dynamic imports for heavy components.",
+      "category": "pattern",
+      "domain": "Vite & Build Tooling",
+      "severity": "high",
+      "tags": ["vite", "code-splitting", "lazy-loading", "dynamic-import", "performance"],
+      "template": "## Code Splitting in Vite\n\n### Route-based lazy loading (React Router / TanStack Router)\n```tsx\nimport { lazy, Suspense } from 'react';\n\n// Each route = separate chunk, loaded on navigation\nconst Dashboard  = lazy(() => import('./pages/Dashboard'));\nconst Analytics  = lazy(() => import('./pages/Analytics'));\nconst Settings   = lazy(() => import('./pages/Settings'));\n\nfunction App() {\n  return (\n    <Suspense fallback={<PageSkeleton />}>\n      <Routes>\n        <Route path=\"/dashboard\" element={<Dashboard />} />\n        <Route path=\"/analytics\" element={<Analytics />} />\n      </Routes>\n    </Suspense>\n  );\n}\n```\n\n### Manual chunks (vendor splitting)\n```ts\n// vite.config.ts\nbuild: {\n  rollupOptions: {\n    output: {\n      manualChunks: {\n        // Stable vendor chunks — long-term browser cache\n        'vendor-react': ['react', 'react-dom'],\n        'vendor-query': ['@tanstack/react-query'],\n        'vendor-ui':    ['@radix-ui/react-dialog', '@radix-ui/react-tooltip'],\n        'vendor-charts': ['recharts'],\n      },\n    },\n  },\n}\n```\n\n### Lazy-load heavy components\n```tsx\n// Only load chart library when the chart page is visited\nconst ChartComponent = lazy(() =>\n  import('recharts').then(m => ({ default: m.LineChart }))\n);\n\n// Lazy-load after user interaction\nasync function openEditor() {\n  const { Editor } = await import('./components/RichTextEditor');\n  setEditorComponent(() => Editor);\n}\n```\n\n**Rule:** Initial bundle should be < 150KB gzipped. Every route-group gets its own chunk."
+    },
+    {
+      "id": "vite-env-vars",
+      "name": "Environment Variables in Vite",
+      "description": "Access env vars via import.meta.env, type them with env.d.ts, and follow .env file hierarchy for dev/test/prod.",
+      "category": "pattern",
+      "domain": "Vite & Build Tooling",
+      "severity": "high",
+      "tags": ["vite", "env-vars", "environment", "typescript", "configuration"],
+      "template": "## Vite Environment Variables\n\n### File hierarchy (Vite loads in order, later wins)\n```\n.env               # always loaded (base)\n.env.local         # always loaded, gitignored\n.env.development   # only in dev (npm run dev)\n.env.production    # only in build (npm run build)\n.env.test          # only in test mode\n```\n\n### Access in code\n```ts\n// ONLY vars prefixed VITE_ are exposed to client code\nimport.meta.env.VITE_API_URL     // your custom var\nimport.meta.env.MODE             // 'development' | 'production' | 'test'\nimport.meta.env.PROD             // boolean\nimport.meta.env.DEV              // boolean\nimport.meta.env.BASE_URL         // base URL from config.base\n```\n\n### Type-safe env vars (src/env.d.ts)\n```ts\n/// <reference types=\"vite/client\" />\n\ninterface ImportMetaEnv {\n  readonly VITE_API_URL: string;\n  readonly VITE_APP_TITLE: string;\n  readonly VITE_FEATURE_FLAGS: string;  // JSON string, parse at runtime\n}\n\ninterface ImportMeta {\n  readonly env: ImportMetaEnv;\n}\n```\n\n### Validate at startup\n```ts\n// src/lib/env.ts — validated, typed env object\nconst env = {\n  apiUrl:    import.meta.env.VITE_API_URL    || fail('VITE_API_URL required'),\n  appTitle:  import.meta.env.VITE_APP_TITLE  || 'My App',\n};\n\nfunction fail(msg: string): never { throw new Error(msg); }\nexport { env };\n```\n\n**Security:** Never prefix secrets with `VITE_` — they are exposed in the browser bundle."
+    },
+    {
+      "id": "vite-plugins-ecosystem",
+      "name": "Essential Vite Plugins",
+      "description": "Key Vite plugins for React development: SWC, SVG imports, CSS modules, auto-import, and bundle analysis.",
+      "category": "pattern",
+      "domain": "Vite & Build Tooling",
+      "severity": "medium",
+      "tags": ["vite", "plugins", "swc", "svg", "css-modules"],
+      "template": "## Essential Vite Plugins\n\n```bash\nnpm install -D @vitejs/plugin-react-swc  # SWC = 20× faster than Babel\nnpm install -D vite-plugin-svgr         # import SVG as React components\nnpm install -D unplugin-auto-import     # auto-import React hooks\n```\n\n```ts\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react-swc';\nimport svgr from 'vite-plugin-svgr';\nimport AutoImport from 'unplugin-auto-import/vite';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n\n    // Import SVG as React component\n    svgr({ svgrOptions: { icon: true } }),\n    // Usage: import Logo from './logo.svg?react';\n\n    AutoImport({\n      imports: ['react'],   // auto-import useState, useEffect, etc.\n      dts: 'src/auto-imports.d.ts',\n    }),\n  ],\n});\n```\n\n### Tailwind v4 with Vite\n```bash\nnpm install tailwindcss @tailwindcss/vite\n```\n```ts\nimport tailwindcss from '@tailwindcss/vite';\nexport default defineConfig({ plugins: [react(), tailwindcss()] });\n```\n\n### Path-based CSS Modules\n```ts\n// Vite handles *.module.css automatically — no plugin needed\nimport styles from './Button.module.css';\n<button className={styles.button}>...</button>\n\n// Global styles\nimport './globals.css'; // not *.module.css = global scope\n```"
+    },
+    {
+      "id": "vite-bundle-analysis",
+      "name": "Bundle Analysis and Performance Budgets",
+      "description": "Analyze Vite/Rollup bundles with rollup-plugin-visualizer. Set size budgets and detect bloat before it ships.",
+      "category": "pattern",
+      "domain": "Vite & Build Tooling",
+      "severity": "medium",
+      "tags": ["vite", "bundle-size", "performance", "analysis", "optimization"],
+      "template": "## Bundle Analysis\n\n```bash\nnpm install -D rollup-plugin-visualizer\n```\n\n```ts\n// vite.config.ts\nimport { visualizer } from 'rollup-plugin-visualizer';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    // Generates stats.html after build\n    visualizer({\n      open: true,          // auto-open in browser\n      gzipSize: true,      // show gzipped sizes\n      brotliSize: true,\n      filename: 'dist/stats.html',\n    }),\n  ],\n});\n// Run: npm run build  →  opens visual treemap of bundle\n```\n\n### Size budgets (chunkSizeWarningLimit)\n```ts\nbuild: {\n  chunkSizeWarningLimit: 150,  // warn if any chunk > 150KB\n  rollupOptions: {\n    output: {\n      manualChunks: { vendor: ['react', 'react-dom'] },\n    },\n  },\n}\n```\n\n### Common bundle bloat patterns\n```ts\n// WRONG — imports entire lodash (70KB)\nimport _ from 'lodash';\n\n// CORRECT — tree-shaken, only imports throttle\nimport throttle from 'lodash/throttle';\n// Or: use native alternatives (Object.keys, Array.from, etc.)\n\n// WRONG — imports entire date-fns\nimport * as dateFns from 'date-fns';\n\n// CORRECT — named import (tree-shaken)\nimport { format, parseISO } from 'date-fns';\n```\n\n### Budget targets\n| Chunk | Gzipped budget |\n|-------|----------------|\n| Initial (landing page) | < 150KB |\n| App shell (auth + layout) | < 300KB |\n| Per-route chunk | < 50KB |\n| Vendor chunk | < 200KB (cache long-term) |"
+    }
+  ]
+}

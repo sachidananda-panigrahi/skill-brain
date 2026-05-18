@@ -7,16 +7,16 @@ git clone <repo>
 cd skill-brain
 pnpm install    # or: npm install
 npm start       # http://localhost:3000/dashboard
-npm test        # 15 E2E tests
+npm test        # 21 E2E tests
 ```
 
 ## Constraints
 
-**Stay CommonJS.** No `import`/`export`. No transpilation. The server runs directly with `node index.js`.
+**Stay CommonJS.** No `import`/`export`. No transpilation. The server runs directly with `node src/entry-points/index.js`.
 
 **800-line file cap.** If a file grows past 800 lines, extract a module. Example: `regexFallback.js` was extracted from `scanProject.js` for this reason.
 
-**Zero mandatory config.** The server must start with `node index.js` and pass `npm test` with no env vars. Optional features (embeddings) activate only when the relevant env var is present.
+**Zero mandatory config.** The server must start with `node src/entry-points/index.js` and pass `npm test` with no env vars. Optional features (embeddings) activate only when the relevant env var is present.
 
 **Immutable patterns.** Never mutate arrays or objects in place — use spread / `filter` / `map`. Exception: the `importCounts` and `detectedAntiPatterns` accumulators in the scanner are explicitly mutable by design (closed-over mutation, not exposed).
 
@@ -42,9 +42,39 @@ npm test        # 15 E2E tests
 2. Add the ID prefix to `getSkillType()` in `public/dashboard.html`
 3. Update the ID conventions table in `docs/ARCHITECTURE.md`
 
+## Adding New Prebuilt Skills
+
+Prebuilt skills are bundled offline in the npm package for zero-config usage.
+
+1. Create a new JSON file in `skills/prebuilt/` following the existing schema:
+   ```json
+   {
+     "skills": [
+       {
+         "id": "domain-specific-id",
+         "name": "Skill Name",
+         "domain": "Domain Name",
+         "category": "category",
+         "description": "Short description",
+         "template": "Actionable guidance..."
+       }
+     ]
+   }
+   ```
+
+2. Add the filename to `DEFAULT_SKILL_FILES` in `src/rules/prebuiltSkillsLoader.js`
+
+3. The file is automatically loaded when:
+   - Users run `npx skill-brain init` (tech stack auto-detection filters by relevance)
+   - Users run `npx skill-brain fetch` (fetches matching domains)
+
+4. Skills are automatically deduplicated by ID when multiple files are loaded.
+
+**Note:** Do NOT commit files to `skills/prebuilt/fetched/` — this directory is gitignored and contains only remote-fetched cache content. It is never shipped in the npm package.
+
 ## PR Checklist
 
-- [ ] `npm test` passes (all 15 tests green)
+- [ ] `npm test` passes (all 21 tests green)
 - [ ] No file exceeds 800 lines
 - [ ] No hardcoded secrets or credentials
 - [ ] No new mandatory env vars
@@ -78,5 +108,5 @@ git push origin main --follow-tags
 
 4. Verify workflow run in `.github/workflows/release-publish.yml` succeeds:
 - Validate release tag and package version
-- Publish to npm (`skill-brain`) via Trusted Publishing
-- Publish to GitHub Packages (`@<owner>/skill-brain`)
+- Publish to npm (`@snpanigrahi88/skill-brain`) via Trusted Publishing
+- Publish to GitHub Packages (`@snpanigrahi88/skill-brain`)

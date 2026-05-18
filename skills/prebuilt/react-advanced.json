@@ -1,0 +1,102 @@
+[
+  {
+    "id": "react-usetransition",
+    "name": "useTransition for Non-Urgent Updates",
+    "description": "Wrap state updates that cause expensive re-renders in startTransition to keep the UI responsive. React can interrupt and restart the update if higher-priority work arrives.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "concurrent", "performance", "hooks"],
+    "template": "## useTransition — Non-Urgent State Updates\n\n```jsx\nimport { useTransition, useState } from 'react';\n\nfunction SearchPage() {\n  const [query, setQuery] = useState('');\n  const [results, setResults] = useState([]);\n  const [isPending, startTransition] = useTransition();\n\n  function handleChange(e) {\n    // Urgent: update the input immediately\n    setQuery(e.target.value);\n\n    // Non-urgent: re-render the expensive results list\n    startTransition(() => {\n      setResults(expensiveFilter(e.target.value));\n    });\n  }\n\n  return (\n    <>\n      <input value={query} onChange={handleChange} />\n      {isPending && <Spinner />}\n      <ResultsList items={results} />\n    </>\n  );\n}\n```\n\n**When to use:**\n- Tab switching that re-renders a large list\n- Search/filter with synchronous data\n- Route transitions with expensive components\n\n**When NOT to use:**\n- Async operations (use `useDeferredValue` for those)\n- Animations — transitions can be interrupted"
+  },
+  {
+    "id": "react-usedeferredvalue",
+    "name": "useDeferredValue for Expensive Derived State",
+    "description": "Defer an expensive derived computation while keeping the input responsive. The deferred value lags behind the current value during high-priority renders.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "concurrent", "performance", "hooks"],
+    "template": "## useDeferredValue — Defer Expensive Renders\n\n```jsx\nimport { useDeferredValue, useMemo } from 'react';\n\nfunction FilteredList({ query }) {\n  // deferredQuery lags behind query while the input stays snappy\n  const deferredQuery = useDeferredValue(query);\n  const isStale = deferredQuery !== query;\n\n  const filteredItems = useMemo(\n    () => items.filter(item => item.name.includes(deferredQuery)),\n    [deferredQuery]\n  );\n\n  return (\n    <div style={{ opacity: isStale ? 0.6 : 1, transition: 'opacity 0.2s' }}>\n      {filteredItems.map(item => <Item key={item.id} {...item} />)}\n    </div>\n  );\n}\n```\n\n**useTransition vs useDeferredValue:**\n| | useTransition | useDeferredValue |\n|---|---|---|\n| What you control | state setter | derived value |\n| Has isPending | ✓ | needs manual stale check |\n| Use when | you own the setter | you receive a prop/value |"
+  },
+  {
+    "id": "react-use-hook",
+    "name": "use() Hook for Promises and Context",
+    "description": "React 19's use() hook reads a Promise or Context inside render — enabling server-to-client data passing without useEffect. Suspense catches the pending state.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "react-19", "suspense", "hooks"],
+    "template": "## use() Hook (React 19)\n\n### Reading a Promise\n```jsx\nimport { use, Suspense } from 'react';\n\n// Server Component passes a Promise to a Client Component\nasync function UserPage({ id }) {\n  const userPromise = fetch(`/api/users/${id}`).then(r => r.json());\n  return (\n    <Suspense fallback={<Skeleton />}>\n      <UserProfile userPromise={userPromise} />\n    </Suspense>\n  );\n}\n\n// Client Component\n'use client';\nfunction UserProfile({ userPromise }) {\n  const user = use(userPromise); // suspends until resolved\n  return <h1>{user.name}</h1>;\n}\n```\n\n### Reading Context conditionally\n```jsx\nimport { use } from 'react';\n\n// Unlike useContext, use() can be called inside if/else/loops\nfunction ConditionalTheme({ dark }) {\n  if (!dark) return <LightVariant />;\n  const theme = use(ThemeContext); // OK — use() is flexible\n  return <DarkVariant theme={theme} />;\n}\n```\n\n**Rules:**\n- Wrap `use(promise)` in `<Suspense>` — it suspends during fetch\n- Wrap `<Suspense>` in `<ErrorBoundary>` — it throws on rejection\n- `use()` replaces `useEffect + useState` for async data in many cases"
+  },
+  {
+    "id": "react-server-actions",
+    "name": "React Server Actions",
+    "description": "Server Actions are async functions that run on the server, called directly from Client Components or HTML forms. They replace API routes for mutations.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "high",
+    "tags": ["react", "react-19", "server-actions", "next.js"],
+    "template": "## React Server Actions\n\n### Define a Server Action\n```ts\n// app/actions/user.ts\n'use server';\nimport { revalidatePath } from 'next/cache';\nimport { redirect } from 'next/navigation';\n\nexport async function updateUser(formData: FormData) {\n  const name = formData.get('name') as string;\n  // Validate\n  if (!name || name.length < 2) {\n    return { error: 'Name must be at least 2 characters' };\n  }\n  await db.users.update({ where: { id: userId }, data: { name } });\n  revalidatePath('/profile');\n  // return state or redirect\n}\n```\n\n### Use in a form (progressive enhancement)\n```tsx\n// Works without JS — native form submission\n<form action={updateUser}>\n  <input name=\"name\" />\n  <button type=\"submit\">Save</button>\n</form>\n```\n\n### With useActionState (React 19)\n```tsx\n'use client';\nimport { useActionState } from 'react';\n\nfunction EditForm() {\n  const [state, action, isPending] = useActionState(updateUser, null);\n  return (\n    <form action={action}>\n      <input name=\"name\" />\n      {state?.error && <p>{state.error}</p>}\n      <button disabled={isPending}>{isPending ? 'Saving...' : 'Save'}</button>\n    </form>\n  );\n}\n```\n\n**Security:** Server Actions are automatically protected against CSRF. Never trust client-supplied IDs — always validate server-side ownership."
+  },
+  {
+    "id": "react-useoptimistic",
+    "name": "useOptimistic for Optimistic UI",
+    "description": "Apply an optimistic state update immediately while the async operation is in flight. React automatically reverts on error.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "react-19", "optimistic-ui", "ux"],
+    "template": "## useOptimistic — Instant UI Feedback\n\n```tsx\n'use client';\nimport { useOptimistic, useTransition } from 'react';\n\nfunction LikeButton({ post }: { post: Post }) {\n  const [optimisticPost, addOptimistic] = useOptimistic(\n    post,\n    (currentState, liked: boolean) => ({\n      ...currentState,\n      liked,\n      likeCount: currentState.likeCount + (liked ? 1 : -1),\n    })\n  );\n\n  const [, startTransition] = useTransition();\n\n  async function handleLike() {\n    startTransition(async () => {\n      // Show immediately\n      addOptimistic(!optimisticPost.liked);\n      // Sync to server (reverts automatically on error)\n      await toggleLike(post.id);\n    });\n  }\n\n  return (\n    <button onClick={handleLike}>\n      {optimisticPost.liked ? '❤️' : '🤍'} {optimisticPost.likeCount}\n    </button>\n  );\n}\n```\n\n**Rules:**\n- Always wrap in `startTransition` — optimistic updates are non-urgent\n- The state reverts automatically when the async action settles\n- Show a visual diff (opacity, border) while in optimistic state"
+  },
+  {
+    "id": "react-compound-components",
+    "name": "Compound Component Pattern",
+    "description": "Build flexible, composable UI by splitting a component into a parent (holds state) and named child components (consume via context). Consumer controls the layout.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "patterns", "composition", "api-design"],
+    "template": "## Compound Component Pattern\n\n```tsx\nimport { createContext, useContext, useState } from 'react';\n\n// 1. Context\ninterface TabsCtx { active: string; setActive: (id: string) => void; }\nconst TabsContext = createContext<TabsCtx | null>(null);\nconst useTabs = () => {\n  const ctx = useContext(TabsContext);\n  if (!ctx) throw new Error('Must be used within <Tabs>');\n  return ctx;\n};\n\n// 2. Parent — owns state\nfunction Tabs({ defaultValue, children }: { defaultValue: string; children: React.ReactNode }) {\n  const [active, setActive] = useState(defaultValue);\n  return <TabsContext.Provider value={{ active, setActive }}>{children}</TabsContext.Provider>;\n}\n\n// 3. Sub-components — consume context\nTabs.List = function TabsList({ children }: { children: React.ReactNode }) {\n  return <div role=\"tablist\">{children}</div>;\n};\n\nTabs.Trigger = function TabsTrigger({ value, children }: { value: string; children: React.ReactNode }) {\n  const { active, setActive } = useTabs();\n  return (\n    <button role=\"tab\" aria-selected={active === value} onClick={() => setActive(value)}>\n      {children}\n    </button>\n  );\n};\n\nTabs.Content = function TabsContent({ value, children }: { value: string; children: React.ReactNode }) {\n  const { active } = useTabs();\n  return active === value ? <div role=\"tabpanel\">{children}</div> : null;\n};\n\n// Usage — consumer controls layout\n<Tabs defaultValue=\"profile\">\n  <Tabs.List>\n    <Tabs.Trigger value=\"profile\">Profile</Tabs.Trigger>\n    <Tabs.Trigger value=\"settings\">Settings</Tabs.Trigger>\n  </Tabs.List>\n  <Tabs.Content value=\"profile\"><ProfileForm /></Tabs.Content>\n  <Tabs.Content value=\"settings\"><SettingsForm /></Tabs.Content>\n</Tabs>\n```"
+  },
+  {
+    "id": "react-memo-usememo-usecallback",
+    "name": "React.memo, useMemo, useCallback — When and When Not",
+    "description": "Memoization is a tradeoff. Overusing it adds memory and maintenance cost. Apply only when profiler shows a real problem.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "high",
+    "tags": ["react", "performance", "memoization", "optimization"],
+    "template": "## React.memo / useMemo / useCallback — Decision Guide\n\n### React.memo — skip re-render when props didn't change\n```tsx\n// ✅ Good: expensive list item with stable props\nconst ExpensiveRow = React.memo(function ExpensiveRow({ item, onDelete }) {\n  // only re-renders if item or onDelete reference changes\n  return <tr>...</tr>;\n});\n\n// ❌ Pointless: cheap component — memo cost > savings\nconst Label = React.memo(({ text }) => <span>{text}</span>);\n```\n\n### useMemo — cache expensive computation\n```tsx\n// ✅ Expensive: large dataset sort/filter\nconst sorted = useMemo(\n  () => [...data].sort((a, b) => a.name.localeCompare(b.name)),\n  [data] // only recompute when data changes\n);\n\n// ❌ Pointless: trivial computation\nconst doubled = useMemo(() => count * 2, [count]);\n```\n\n### useCallback — stable function reference\n```tsx\n// ✅ Needed: passed to React.memo child or used as useEffect dep\nconst handleDelete = useCallback((id: string) => {\n  setItems(prev => prev.filter(i => i.id !== id));\n}, []);\n\n// ❌ Pointless: function not passed to memoized child\nconst handleClick = useCallback(() => setOpen(true), []);\n```\n\n**Decision rule:**\n1. Profile first — Chrome DevTools → React Profiler\n2. Find the component that renders when it shouldn't\n3. Add `React.memo` + `useCallback` for its callbacks\n4. Add `useMemo` only if the profiler shows the computation is expensive"
+  },
+  {
+    "id": "react-error-boundaries",
+    "name": "Error Boundaries",
+    "description": "Use error boundaries to catch render errors in a subtree and show a fallback UI instead of crashing the whole app. Required around every async boundary.",
+    "category": "enforcement",
+    "domain": "React.js",
+    "severity": "critical",
+    "tags": ["react", "errors", "resilience", "ux"],
+    "template": "## Error Boundaries\n\n### Using react-error-boundary (recommended)\n```tsx\nimport { ErrorBoundary } from 'react-error-boundary';\n\nfunction ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {\n  return (\n    <div role=\"alert\">\n      <p>Something went wrong:</p>\n      <pre>{error.message}</pre>\n      <button onClick={resetErrorBoundary}>Try again</button>\n    </div>\n  );\n}\n\n// Wrap any subtree that might throw\n<ErrorBoundary FallbackComponent={ErrorFallback} onError={logError}>\n  <Suspense fallback={<Spinner />}>\n    <AsyncComponent />\n  </Suspense>\n</ErrorBoundary>\n```\n\n### In Next.js App Router — error.tsx\n```tsx\n// app/dashboard/error.tsx — auto error boundary for the route segment\n'use client';\nexport default function Error({ error, reset }: { error: Error; reset: () => void }) {\n  return (\n    <div>\n      <h2>Something went wrong!</h2>\n      <button onClick={reset}>Try again</button>\n    </div>\n  );\n}\n```\n\n**Rules:**\n- Wrap every `<Suspense>` in an `<ErrorBoundary>` — rejected promises throw\n- Error boundaries don't catch: event handlers, async code, SSR errors, errors in the boundary itself\n- Log errors to an error tracking service (Sentry, etc.) in the `onError` callback\n- Always provide a `reset` mechanism so users can recover without refreshing"
+  },
+  {
+    "id": "react-custom-hooks",
+    "name": "Custom Hook Patterns",
+    "description": "Extract stateful logic into custom hooks for reuse across components. Hooks should be pure logic — no JSX, no side effects beyond React's own.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "medium",
+    "tags": ["react", "hooks", "reuse", "patterns"],
+    "template": "## Custom Hook Patterns\n\n### useFetch — data fetching with loading/error state\n```tsx\nfunction useFetch<T>(url: string) {\n  const [state, setState] = useState<{ data: T | null; loading: boolean; error: Error | null }>({\n    data: null, loading: true, error: null\n  });\n\n  useEffect(() => {\n    const controller = new AbortController();\n    fetch(url, { signal: controller.signal })\n      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })\n      .then(data => setState({ data, loading: false, error: null }))\n      .catch(err => {\n        if (err.name !== 'AbortError') setState({ data: null, loading: false, error: err });\n      });\n    return () => controller.abort();\n  }, [url]);\n\n  return state;\n}\n```\n\n### useLocalStorage — synced localStorage state\n```tsx\nfunction useLocalStorage<T>(key: string, initial: T) {\n  const [value, setValue] = useState<T>(() => {\n    try { return JSON.parse(localStorage.getItem(key) ?? '') as T; }\n    catch { return initial; }\n  });\n\n  const set = useCallback((next: T | ((prev: T) => T)) => {\n    const resolved = typeof next === 'function' ? (next as (p: T) => T)(value) : next;\n    setValue(resolved);\n    localStorage.setItem(key, JSON.stringify(resolved));\n  }, [key, value]);\n\n  return [value, set] as const;\n}\n```\n\n### useDebounce — debounce rapidly changing values\n```tsx\nfunction useDebounce<T>(value: T, delay = 300): T {\n  const [debounced, setDebounced] = useState(value);\n  useEffect(() => {\n    const timer = setTimeout(() => setDebounced(value), delay);\n    return () => clearTimeout(timer);\n  }, [value, delay]);\n  return debounced;\n}\n```\n\n**Rules:**\n- Name always starts with `use`\n- Must be called at the top level — never inside conditions or loops\n- Each hook = one well-named responsibility"
+  },
+  {
+    "id": "react-tanstack-query",
+    "name": "TanStack Query for Server State",
+    "description": "Use TanStack Query (React Query) to manage all async server state. Eliminates useEffect/useState data-fetching boilerplate and adds caching, deduplication, and background refetch.",
+    "category": "pattern",
+    "domain": "React.js",
+    "severity": "high",
+    "tags": ["react", "tanstack-query", "data-fetching", "server-state"],
+    "template": "## TanStack Query — Server State Management\n\n### Setup\n```tsx\n// app/providers.tsx\nimport { QueryClient, QueryClientProvider } from '@tanstack/react-query';\nconst queryClient = new QueryClient({\n  defaultOptions: { queries: { staleTime: 60_000, retry: 1 } }\n});\nexport function Providers({ children }) {\n  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;\n}\n```\n\n### Query (GET)\n```tsx\nimport { useQuery } from '@tanstack/react-query';\n\nconst userKeys = { all: ['users'] as const, detail: (id: string) => ['users', id] as const };\n\nfunction UserProfile({ id }: { id: string }) {\n  const { data: user, isPending, error } = useQuery({\n    queryKey: userKeys.detail(id),\n    queryFn: () => fetch(`/api/users/${id}`).then(r => r.json()),\n  });\n\n  if (isPending) return <Skeleton />;\n  if (error) return <Error message={error.message} />;\n  return <div>{user.name}</div>;\n}\n```\n\n### Mutation (POST/PUT/DELETE)\n```tsx\nimport { useMutation, useQueryClient } from '@tanstack/react-query';\n\nfunction DeleteUserButton({ id }: { id: string }) {\n  const queryClient = useQueryClient();\n  const { mutate, isPending } = useMutation({\n    mutationFn: (id: string) => fetch(`/api/users/${id}`, { method: 'DELETE' }),\n    onSuccess: () => queryClient.invalidateQueries({ queryKey: userKeys.all }),\n  });\n  return <button onClick={() => mutate(id)} disabled={isPending}>Delete</button>;\n}\n```\n\n**Rule:** Never store server data in `useState` + `useEffect`. That's TanStack Query's job."
+  }
+]

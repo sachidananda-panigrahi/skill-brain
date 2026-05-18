@@ -20,7 +20,7 @@ curl http://localhost:3000/api/health
   "status": "ok",
   "uptime": 42.1,
   "embeddingsEnabled": false,
-  "mcpServerPath": "/path/to/skill-brain/mcp-server.js"
+  "mcpServerPath": "/path/to/skill-brain/src/entry-points/mcp-server.js"
 }
 ```
 
@@ -187,6 +187,50 @@ curl -X DELETE "http://localhost:3000/api/skills/my-skill-id?project=my-app"
 
 ---
 
+## Skill Export & SKILLS.md Generation
+
+### `POST /api/skills/export/markdown`
+
+Regenerate all registered SKILLS.md files (fire-and-forget operation). This is called automatically whenever skills are created, updated, or deleted via CRUD operations.
+
+```bash
+curl -X POST http://localhost:3000/api/skills/export/markdown
+```
+
+**Response 200:**
+```json
+{
+  "message": "Markdown export triggered for registered paths",
+  "paths": ["/Users/name/my-app/SKILLS.md", "/Users/name/another-app/SKILLS.md"]
+}
+```
+
+---
+
+### `GET /api/skills/export/status`
+
+List all registered SKILLS.md output paths and their last-modified timestamps.
+
+```bash
+curl http://localhost:3000/api/skills/export/status
+```
+
+**Response 200:**
+```json
+{
+  "registered": [
+    {
+      "path": "/Users/name/my-app/SKILLS.md",
+      "lastModified": "2026-05-19T10:30:00Z",
+      "version": "1.0.0"
+    }
+  ],
+  "config": "/Users/name/projects/skill-brain/skills/config.json"
+}
+```
+
+---
+
 ## Scan
 
 ### `POST /api/scan`
@@ -227,7 +271,7 @@ Use `mcp-server.js` with tools like Claude Desktop, Cursor, Zed, or Continue.
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+      "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
     }
   }
 }

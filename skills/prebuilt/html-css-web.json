@@ -1,0 +1,102 @@
+[
+  {
+    "id": "semantic-html-structure",
+    "name": "Semantic HTML Structure",
+    "description": "Use landmark elements (header, main, nav, aside, footer, section, article) to give pages meaningful structure for assistive tech and search engines.",
+    "category": "enforcement",
+    "domain": "HTML & CSS",
+    "severity": "high",
+    "tags": ["html", "accessibility", "semantics", "seo"],
+    "template": "## Semantic HTML Structure\n\nUse HTML5 landmark elements with intent:\n\n```html\n<header>\n  <nav aria-label=\"Main navigation\">\n    <ul>\n      <li><a href=\"/\">Home</a></li>\n    </ul>\n  </nav>\n</header>\n\n<main>\n  <article>\n    <h1>Article Title</h1>\n    <section aria-labelledby=\"section-heading\">\n      <h2 id=\"section-heading\">Section</h2>\n      <p>Content...</p>\n    </section>\n  </article>\n\n  <aside aria-label=\"Related content\">\n    <p>Sidebar</p>\n  </aside>\n</main>\n\n<footer>\n  <p>&copy; 2024</p>\n</footer>\n```\n\n**Rules:**\n- One `<h1>` per page — the primary topic\n- Heading hierarchy must not skip levels (h1 → h2 → h3)\n- Use `<button>` for actions, `<a>` for navigation\n- Never use `<div>` or `<span>` when a semantic element exists\n- Add `aria-label` to landmarks that appear more than once"
+  },
+  {
+    "id": "html-forms-accessibility",
+    "name": "Accessible HTML Forms",
+    "description": "Every input must have an associated label; use fieldset/legend for groups; rely on native constraint validation before adding JS validation.",
+    "category": "enforcement",
+    "domain": "HTML & CSS",
+    "severity": "critical",
+    "tags": ["html", "forms", "accessibility", "ux"],
+    "template": "## Accessible HTML Forms\n\n```html\n<form novalidate>\n  <!-- Explicit label association -->\n  <div class=\"field\">\n    <label for=\"email\">Email address</label>\n    <input\n      id=\"email\"\n      type=\"email\"\n      name=\"email\"\n      required\n      autocomplete=\"email\"\n      aria-describedby=\"email-hint email-error\"\n    />\n    <p id=\"email-hint\" class=\"hint\">We'll never share your email.</p>\n    <p id=\"email-error\" role=\"alert\" hidden>Please enter a valid email.</p>\n  </div>\n\n  <!-- Group related inputs -->\n  <fieldset>\n    <legend>Shipping method</legend>\n    <label><input type=\"radio\" name=\"ship\" value=\"standard\" /> Standard</label>\n    <label><input type=\"radio\" name=\"ship\" value=\"express\" /> Express</label>\n  </fieldset>\n\n  <button type=\"submit\">Submit</button>\n</form>\n```\n\n**Rules:**\n- Never use `placeholder` as the only label — it disappears on focus\n- Use `autocomplete` attributes to reduce friction\n- Show inline errors with `role=\"alert\"` so screen readers announce them\n- Use `required`, `minlength`, `pattern` for native validation\n- Disable submit only after the user has attempted to submit"
+  },
+  {
+    "id": "css-custom-properties-tokens",
+    "name": "CSS Custom Properties as Design Tokens",
+    "description": "Define all design values (color, spacing, typography, motion) as custom properties on :root. Reference tokens everywhere instead of hardcoding values.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "high",
+    "tags": ["css", "design-tokens", "theming", "maintainability"],
+    "template": "## CSS Custom Properties as Design Tokens\n\n```css\n/* tokens.css */\n:root {\n  /* Color palette */\n  --color-brand-500: oklch(58% 0.22 250);\n  --color-brand-600: oklch(50% 0.22 250);\n  --color-surface: oklch(98% 0 0);\n  --color-surface-raised: oklch(96% 0 0);\n  --color-text: oklch(18% 0 0);\n  --color-text-muted: oklch(50% 0 0);\n\n  /* Spacing scale (4px base) */\n  --space-1: 0.25rem;\n  --space-2: 0.5rem;\n  --space-4: 1rem;\n  --space-8: 2rem;\n  --space-16: 4rem;\n\n  /* Typography */\n  --text-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);\n  --text-base: clamp(1rem, 0.92rem + 0.4vw, 1.125rem);\n  --text-lg: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);\n  --text-xl: clamp(1.5rem, 1.2rem + 1.5vw, 2.25rem);\n  --text-hero: clamp(2.5rem, 1.5rem + 5vw, 5rem);\n\n  /* Motion */\n  --duration-fast: 120ms;\n  --duration-normal: 250ms;\n  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);\n}\n\n/* Dark mode override */\n@media (prefers-color-scheme: dark) {\n  :root {\n    --color-surface: oklch(14% 0 0);\n    --color-text: oklch(92% 0 0);\n  }\n}\n```\n\n**Rules:**\n- Tokens are the ONLY source of color, spacing, type — never hardcode hex/px in component CSS\n- Use `oklch()` for perceptually uniform colors and easy manipulation\n- Use `clamp()` for fluid scaling — no breakpoint-based font sizes\n- Dark mode is a one-line token swap, not a separate stylesheet"
+  },
+  {
+    "id": "css-grid-layout",
+    "name": "CSS Grid Layout Patterns",
+    "description": "Use CSS Grid for two-dimensional layouts — page structure, card grids, dashboard panels. Prefer named grid areas for readability.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "medium",
+    "tags": ["css", "grid", "layout", "responsive"],
+    "template": "## CSS Grid Layout Patterns\n\n### Page shell with named areas\n```css\n.layout {\n  display: grid;\n  grid-template-columns: 240px 1fr;\n  grid-template-rows: auto 1fr auto;\n  grid-template-areas:\n    \"header header\"\n    \"nav    main\"\n    \"footer footer\";\n  min-height: 100dvh;\n}\n\n.layout > header { grid-area: header; }\n.layout > nav    { grid-area: nav; }\n.layout > main   { grid-area: main; }\n.layout > footer { grid-area: footer; }\n\n@media (width < 768px) {\n  .layout {\n    grid-template-columns: 1fr;\n    grid-template-areas: \"header\" \"main\" \"nav\" \"footer\";\n  }\n}\n```\n\n### Auto-fill responsive card grid\n```css\n.card-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));\n  gap: var(--space-4);\n}\n```\n\n### Holy grail with subgrid\n```css\n.card-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n  grid-template-rows: auto;\n}\n\n.card {\n  display: grid;\n  grid-row: span 3;\n  grid-template-rows: subgrid; /* align card internals across row */\n}\n```\n\n**Rules:**\n- Use `auto-fill` + `minmax` for self-adapting grids — no media queries needed\n- Name areas with `grid-template-areas` when you have more than 2 regions\n- Prefer `gap` over margin between grid children\n- `min(280px, 100%)` prevents overflow on small viewports"
+  },
+  {
+    "id": "css-flexbox-patterns",
+    "name": "CSS Flexbox Patterns",
+    "description": "Use Flexbox for one-dimensional layouts — navigation bars, button groups, centering, stretch-to-fill. Know when to use Grid instead.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "medium",
+    "tags": ["css", "flexbox", "layout"],
+    "template": "## CSS Flexbox Patterns\n\n### Navigation bar (space-between)\n```css\n.nav {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: var(--space-4);\n  padding-inline: var(--space-8);\n}\n\n/* Push last item to end */\n.nav > .actions { margin-inline-start: auto; }\n```\n\n### Perfect centering\n```css\n.center {\n  display: flex;\n  place-items: center; /* shorthand for align + justify */\n  min-height: 100dvh;\n}\n```\n\n### Stretch card in a row\n```css\n.row { display: flex; gap: var(--space-4); }\n.row > * { flex: 1 1 0; } /* equal width, can shrink, no intrinsic basis */\n```\n\n### Wrap with consistent item size\n```css\n.tag-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: var(--space-2);\n}\n.tag-list > * { flex: 0 0 auto; }\n```\n\n**Grid vs Flex decision:**\n- Two dimensions (rows AND columns) → Grid\n- One dimension OR content-driven sizing → Flexbox\n- Alignment within a grid cell → nested Flexbox inside Grid"
+  },
+  {
+    "id": "css-animations-performance",
+    "name": "CSS Animations — Compositor-Only Properties",
+    "description": "Animate only transform, opacity, clip-path, and filter to stay on the GPU compositor thread. Animating layout properties causes reflows and janks.",
+    "category": "enforcement",
+    "domain": "HTML & CSS",
+    "severity": "high",
+    "tags": ["css", "animation", "performance", "web-vitals"],
+    "template": "## CSS Animations — Compositor-Only Properties\n\n### Good — GPU-composited\n```css\n.card {\n  transition: transform var(--duration-normal) var(--ease-out),\n              opacity var(--duration-fast) ease;\n  will-change: transform; /* hint for dedicated layer — remove after animation */\n}\n\n.card:hover {\n  transform: translateY(-4px) scale(1.01);\n  opacity: 0.95;\n}\n```\n\n### Reveal animation with @keyframes\n```css\n@keyframes slide-up {\n  from { transform: translateY(1rem); opacity: 0; }\n  to   { transform: translateY(0);    opacity: 1; }\n}\n\n.hero-text {\n  animation: slide-up 0.5s var(--ease-out) both;\n}\n```\n\n### Reduced motion respect\n```css\n@media (prefers-reduced-motion: reduce) {\n  *, *::before, *::after {\n    animation-duration: 0.01ms !important;\n    transition-duration: 0.01ms !important;\n  }\n}\n```\n\n**Never animate (causes layout/paint):**\n- `width`, `height`, `margin`, `padding` → use `transform: scale()` instead\n- `top`, `left` → use `transform: translate()` instead\n- `font-size` → animate with `transform: scale()` on a wrapper\n- `background-color` → acceptable only for short durations"
+  },
+  {
+    "id": "css-container-queries",
+    "name": "CSS Container Queries",
+    "description": "Use container queries to make components respond to their parent container size, not the viewport. Essential for reusable components in grid/flex layouts.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "medium",
+    "tags": ["css", "container-queries", "responsive", "components"],
+    "template": "## CSS Container Queries\n\n```css\n/* 1. Declare the containment context */\n.card-wrapper {\n  container-type: inline-size;\n  container-name: card;\n}\n\n/* 2. Query the container, not the viewport */\n@container card (width >= 480px) {\n  .card {\n    display: grid;\n    grid-template-columns: 200px 1fr;\n  }\n}\n\n@container card (width < 480px) {\n  .card-image { aspect-ratio: 16/9; width: 100%; }\n}\n```\n\n### Container units\n```css\n.card-title {\n  font-size: clamp(1rem, 5cqi, 1.5rem); /* cqi = 1% of container inline-size */\n}\n```\n\n**Why this beats media queries for components:**\n- A `.card` in a 3-column grid vs full-width both render correctly\n- Zero coupling between component and page layout\n- Composable: nest containers, each responds independently\n\n**Support:** Baseline 2023 — all major browsers. Safe to use."
+  },
+  {
+    "id": "css-logical-properties",
+    "name": "CSS Logical Properties for i18n",
+    "description": "Use logical properties (inline/block) instead of physical (left/right/top/bottom) so layouts work correctly in RTL and vertical writing modes without extra CSS.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "medium",
+    "tags": ["css", "i18n", "rtl", "logical-properties"],
+    "template": "## CSS Logical Properties\n\n```css\n/* Physical → Logical equivalents */\nmargin-left:   → margin-inline-start\nmargin-right:  → margin-inline-end\nmargin-top:    → margin-block-start\npadding-left:  → padding-inline-start\nborder-left:   → border-inline-start\nwidth:         → inline-size\nheight:        → block-size\ntop:           → inset-block-start\nleft:          → inset-inline-start\n\n/* Shorthand logical properties */\n.component {\n  margin-inline: auto;         /* left+right = auto */\n  padding-inline: var(--space-4);\n  padding-block: var(--space-2);\n  inset-inline: 0;             /* left: 0; right: 0 */\n  border-inline-start: 3px solid var(--color-brand-500);\n}\n```\n\n**Rule:** All new CSS must use logical properties. Physical direction properties are banned in shared components."
+  },
+  {
+    "id": "html-meta-seo",
+    "name": "HTML Meta Tags for SEO & Social",
+    "description": "Every page needs a complete set of meta tags: title, description, canonical, Open Graph, Twitter Card, and viewport.",
+    "category": "enforcement",
+    "domain": "HTML & CSS",
+    "severity": "high",
+    "tags": ["html", "seo", "meta", "social"],
+    "template": "## HTML Meta Tags Checklist\n\n```html\n<head>\n  <meta charset=\"UTF-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n\n  <!-- Primary SEO -->\n  <title>Page Title | Brand (50-60 chars)</title>\n  <meta name=\"description\" content=\"150-160 char description with target keyword.\" />\n  <link rel=\"canonical\" href=\"https://example.com/page\" />\n\n  <!-- Open Graph (Facebook, LinkedIn, Slack) -->\n  <meta property=\"og:title\" content=\"Page Title\" />\n  <meta property=\"og:description\" content=\"Short description.\" />\n  <meta property=\"og:image\" content=\"https://example.com/og-image.jpg\" />\n  <meta property=\"og:url\" content=\"https://example.com/page\" />\n  <meta property=\"og:type\" content=\"website\" />\n\n  <!-- Twitter / X Card -->\n  <meta name=\"twitter:card\" content=\"summary_large_image\" />\n  <meta name=\"twitter:title\" content=\"Page Title\" />\n  <meta name=\"twitter:description\" content=\"Short description.\" />\n  <meta name=\"twitter:image\" content=\"https://example.com/og-image.jpg\" />\n\n  <!-- Performance -->\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" crossorigin />\n</head>\n```\n\n**Checklist:**\n- [ ] Title is 50-60 characters\n- [ ] Description is 150-160 characters with primary keyword\n- [ ] Canonical URL avoids duplicate content\n- [ ] OG image is 1200×630px minimum\n- [ ] No duplicate meta tags across pages"
+  },
+  {
+    "id": "css-cascade-layers",
+    "name": "CSS @layer for Cascade Management",
+    "description": "Use @layer to explicitly control specificity order between reset, tokens, components, and utilities. Prevents specificity wars.",
+    "category": "pattern",
+    "domain": "HTML & CSS",
+    "severity": "medium",
+    "tags": ["css", "cascade", "architecture", "specificity"],
+    "template": "## CSS @layer Cascade Architecture\n\n```css\n/* Define layer order at the top of your root stylesheet — lower = lower priority */\n@layer reset, tokens, base, components, utilities;\n\n@layer reset {\n  *, *::before, *::after { box-sizing: border-box; }\n  body { margin: 0; }\n  img { max-inline-size: 100%; display: block; }\n}\n\n@layer tokens {\n  :root { --color-brand: oklch(58% 0.22 250); }\n}\n\n@layer base {\n  body { font-family: system-ui, sans-serif; color: var(--color-text); }\n  a { color: var(--color-brand); }\n}\n\n@layer components {\n  .btn {\n    padding: var(--space-2) var(--space-4);\n    background: var(--color-brand);\n  }\n}\n\n@layer utilities {\n  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }\n  .visually-hidden { composes: sr-only; }\n}\n```\n\n**Benefits:**\n- Any class in `utilities` beats `components` regardless of selector specificity\n- Third-party CSS imported into a lower layer can't leak specificity into your components\n- Eliminates `!important` hacks"
+  }
+]

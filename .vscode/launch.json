@@ -5,8 +5,10 @@
       "name": "Debug: HTTP Server",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/index.js",
-      "env": { "PORT": "3000" },
+      "program": "${workspaceFolder}/src/entry-points/index.js",
+      "env": {
+        "PORT": "3000"
+      },
       "console": "integratedTerminal",
       "restart": true
     },
@@ -14,15 +16,17 @@
       "name": "Debug: MCP Server (stdio)",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/mcp-server.js",
+      "program": "${workspaceFolder}/src/entry-points/mcp-server.js",
       "console": "integratedTerminal"
     },
     {
       "name": "Debug: Scan Project",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/scanProject.js",
-      "args": ["--path=${input:projectPath}"],
+      "program": "${workspaceFolder}/src/engines/scanProject.js",
+      "args": [
+        "--path=${input:projectPath}"
+      ],
       "console": "integratedTerminal"
     },
     {
@@ -30,7 +34,9 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/bin/skill-brain.js",
-      "args": ["${input:cliCommand}"],
+      "args": [
+        "${input:cliCommand}"
+      ],
       "console": "integratedTerminal"
     }
   ],
@@ -45,7 +51,13 @@
       "id": "cliCommand",
       "type": "pickString",
       "description": "CLI command to run",
-      "options": ["start", "mcp", "scan .", "review", "search react performance"],
+      "options": [
+        "start",
+        "mcp",
+        "scan .",
+        "review",
+        "search react performance"
+      ],
       "default": "start"
     }
   ]

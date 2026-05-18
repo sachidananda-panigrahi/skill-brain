@@ -1,0 +1,102 @@
+[
+  {
+    "id": "node-project-structure",
+    "name": "Node.js Project Structure",
+    "description": "Organize a Node.js API project by domain/feature, not by layer. Each feature folder owns its routes, controller, service, and types.",
+    "category": "architecture",
+    "domain": "Node.js",
+    "severity": "high",
+    "tags": ["nodejs", "architecture", "project-structure"],
+    "template": "## Node.js Project Structure (Feature-First)\n\n```\nsrc/\n├── features/\n│   ├── users/\n│   │   ├── users.router.ts      # Express/Fastify routes\n│   │   ├── users.controller.ts  # HTTP layer — parse req, call service, send res\n│   │   ├── users.service.ts     # Business logic\n│   │   ├── users.repository.ts  # DB queries\n│   │   ├── users.schema.ts      # Zod validation schemas\n│   │   └── users.types.ts       # TypeScript interfaces\n│   └── auth/\n│       ├── auth.router.ts\n│       ├── auth.controller.ts\n│       └── auth.service.ts\n├── shared/\n│   ├── middleware/\n│   │   ├── authenticate.ts      # JWT verification\n│   │   ├── validate.ts          # Zod request validation\n│   │   ├── rateLimiter.ts\n│   │   └── errorHandler.ts\n│   ├── db/\n│   │   └── client.ts            # Prisma / Drizzle client\n│   ├── config.ts                # env vars + validation\n│   └── errors.ts                # custom error classes\n├── app.ts                       # Express app setup\n└── server.ts                    # HTTP server + graceful shutdown\n```\n\n**Rules:**\n- Controller = thin adapter between HTTP and service. No business logic.\n- Service = pure business logic. No HTTP concepts (req/res).\n- Repository = all DB access. No business logic.\n- Shared middleware lives in `shared/` — not inside feature folders."
+  },
+  {
+    "id": "node-request-validation",
+    "name": "Request Validation with Zod",
+    "description": "Validate every incoming request body, query, and params against a Zod schema at the route level. Reject invalid requests before they reach business logic.",
+    "category": "enforcement",
+    "domain": "Node.js",
+    "severity": "critical",
+    "tags": ["nodejs", "validation", "zod", "security"],
+    "template": "## Request Validation with Zod\n\n### Schema definition\n```ts\n// users/users.schema.ts\nimport { z } from 'zod';\n\nexport const createUserSchema = z.object({\n  body: z.object({\n    email: z.string().email(),\n    name:  z.string().min(2).max(100),\n    role:  z.enum(['admin', 'user', 'guest']).default('user'),\n  }),\n});\n\nexport const getUserSchema = z.object({\n  params: z.object({ id: z.string().uuid() }),\n});\n\nexport const listUsersSchema = z.object({\n  query: z.object({\n    page:  z.coerce.number().int().min(1).default(1),\n    limit: z.coerce.number().int().min(1).max(100).default(20),\n    role:  z.enum(['admin', 'user', 'guest']).optional(),\n  }),\n});\n```\n\n### Validation middleware\n```ts\n// shared/middleware/validate.ts\nimport { RequestHandler } from 'express';\nimport { ZodSchema, ZodError } from 'zod';\n\nexport function validate(schema: ZodSchema): RequestHandler {\n  return (req, res, next) => {\n    const result = schema.safeParse({ body: req.body, query: req.query, params: req.params });\n    if (!result.success) {\n      const errors = result.error.flatten();\n      return res.status(400).json({ error: 'Validation failed', details: errors.fieldErrors });\n    }\n    // Overwrite with parsed/coerced/defaulted values\n    Object.assign(req, result.data);\n    next();\n  };\n}\n```\n\n### Usage\n```ts\nrouter.post('/users', validate(createUserSchema), createUserController);\nrouter.get('/users/:id', validate(getUserSchema), getUserController);\n```"
+  },
+  {
+    "id": "node-error-middleware",
+    "name": "Centralized Error Handling Middleware",
+    "description": "Use a single Express error middleware at the bottom of the app to handle all errors uniformly. Never send stack traces to clients in production.",
+    "category": "enforcement",
+    "domain": "Node.js",
+    "severity": "critical",
+    "tags": ["nodejs", "errors", "express", "security"],
+    "template": "## Centralized Error Handling Middleware\n\n### Custom error classes\n```ts\n// shared/errors.ts\nexport class AppError extends Error {\n  constructor(public message: string, public statusCode = 500, public code?: string) {\n    super(message);\n    this.name = 'AppError';\n  }\n}\nexport class NotFoundError    extends AppError { constructor(r: string) { super(`${r} not found`, 404, 'NOT_FOUND'); } }\nexport class ValidationError  extends AppError { constructor(m: string) { super(m, 400, 'VALIDATION_ERROR'); } }\nexport class UnauthorizedError extends AppError { constructor() { super('Unauthorized', 401, 'UNAUTHORIZED'); } }\nexport class ForbiddenError   extends AppError { constructor() { super('Forbidden', 403, 'FORBIDDEN'); } }\n```\n\n### Error handler middleware\n```ts\n// Must have 4 params — Express detects error middleware by arity\nimport { ErrorRequestHandler } from 'express';\nimport { AppError } from '../errors';\nimport { ZodError } from 'zod';\n\nexport const errorHandler: ErrorRequestHandler = (err, req, res, next) => {\n  if (res.headersSent) return next(err);\n\n  if (err instanceof ZodError) {\n    return res.status(400).json({ error: 'Validation failed', details: err.flatten().fieldErrors });\n  }\n\n  if (err instanceof AppError) {\n    return res.status(err.statusCode).json({ error: err.message, code: err.code });\n  }\n\n  // Unexpected — log full error, send generic message\n  logger.error({ err, url: req.url, method: req.method }, 'Unexpected error');\n  res.status(500).json({ error: 'Internal server error' });\n};\n\n// Register last in app.ts\napp.use(errorHandler);\n```\n\n**Rules:**\n- Never include `err.stack` in the response body — expose only in logs\n- Use async wrappers or `express-async-errors` to catch async rejections automatically"
+  },
+  {
+    "id": "node-graceful-shutdown",
+    "name": "Graceful Shutdown",
+    "description": "On SIGTERM/SIGINT, stop accepting new connections, drain in-flight requests, close DB connections, then exit. Prevents data corruption on deploys.",
+    "category": "pattern",
+    "domain": "Node.js",
+    "severity": "high",
+    "tags": ["nodejs", "devops", "reliability", "shutdown"],
+    "template": "## Graceful Shutdown\n\n```ts\n// server.ts\nimport { createServer } from 'http';\nimport { app } from './app';\nimport { db } from './shared/db/client';\n\nconst server = createServer(app);\nconst PORT = process.env.PORT || 3000;\n\nserver.listen(PORT, () => console.log(`Listening on ${PORT}`));\n\nasync function shutdown(signal: string) {\n  console.log(`Received ${signal}. Shutting down gracefully...`);\n\n  // 1. Stop accepting new connections\n  server.close(async () => {\n    try {\n      // 2. Close DB pool\n      await db.$disconnect(); // Prisma\n      // or: await pool.end(); // pg\n      console.log('DB disconnected. Exiting.');\n      process.exit(0);\n    } catch (err) {\n      console.error('Shutdown error:', err);\n      process.exit(1);\n    }\n  });\n\n  // 3. Force exit if drain takes too long\n  setTimeout(() => {\n    console.error('Graceful shutdown timeout. Forcing exit.');\n    process.exit(1);\n  }, 30_000);\n}\n\nprocess.on('SIGTERM', () => shutdown('SIGTERM'));\nprocess.on('SIGINT',  () => shutdown('SIGINT'));\nprocess.on('uncaughtException',  err => { logger.fatal(err, 'uncaughtException');  process.exit(1); });\nprocess.on('unhandledRejection', err => { logger.fatal(err, 'unhandledRejection'); process.exit(1); });\n```"
+  },
+  {
+    "id": "node-env-config",
+    "name": "Environment Configuration with Zod",
+    "description": "Parse and validate all environment variables at startup. Fail fast with clear error messages if required env vars are missing or malformed.",
+    "category": "enforcement",
+    "domain": "Node.js",
+    "severity": "critical",
+    "tags": ["nodejs", "config", "environment", "security"],
+    "template": "## Environment Config Validation\n\n```ts\n// shared/config.ts\nimport { z } from 'zod';\n\nconst envSchema = z.object({\n  NODE_ENV:    z.enum(['development', 'test', 'production']).default('development'),\n  PORT:        z.coerce.number().int().min(1024).max(65535).default(3000),\n  DATABASE_URL: z.string().url(),\n  JWT_SECRET:  z.string().min(32),\n  JWT_EXPIRES_IN: z.string().default('7d'),\n  CORS_ORIGIN: z.string().url().optional(),\n  LOG_LEVEL:   z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),\n});\n\nconst parsed = envSchema.safeParse(process.env);\n\nif (!parsed.success) {\n  console.error('Invalid environment variables:');\n  console.error(parsed.error.flatten().fieldErrors);\n  process.exit(1);\n}\n\nexport const config = parsed.data;\n// Use: config.DATABASE_URL — fully typed, never undefined\n```\n\n**Rules:**\n- This module must be imported before any other module that uses env vars\n- Never access `process.env.FOO` directly outside this file\n- `.env` files are for local dev only — production uses injected environment\n- Never commit `.env` — commit `.env.example` with placeholder values"
+  },
+  {
+    "id": "node-rate-limiting",
+    "name": "Rate Limiting with express-rate-limit",
+    "description": "Apply rate limiting to all API routes. Use stricter limits for authentication endpoints to prevent credential stuffing attacks.",
+    "category": "enforcement",
+    "domain": "Node.js",
+    "severity": "high",
+    "tags": ["nodejs", "security", "rate-limiting", "express"],
+    "template": "## Rate Limiting\n\n```ts\nimport rateLimit from 'express-rate-limit';\n\n// Global API limit\nexport const globalLimit = rateLimit({\n  windowMs: 15 * 60 * 1000, // 15 minutes\n  max: 500,\n  standardHeaders: 'draft-7',\n  legacyHeaders: false,\n  message: { error: 'Too many requests, please try again later.' },\n});\n\n// Strict limit for auth endpoints\nexport const authLimit = rateLimit({\n  windowMs: 15 * 60 * 1000,\n  max: 10, // max 10 login attempts per 15 min\n  skipSuccessfulRequests: true, // don't count successful logins\n  message: { error: 'Too many login attempts. Try again in 15 minutes.' },\n});\n\n// Apply\napp.use('/api', globalLimit);\napp.use('/api/auth/login', authLimit);\napp.use('/api/auth/register', authLimit);\n```\n\n**Behind a proxy (Nginx, load balancer):**\n```ts\napp.set('trust proxy', 1); // trust first proxy\n// Or: app.set('trust proxy', 'loopback, 10.0.0.0/8');\n```\n\n**For production scale:** Use Redis as the store:\n```ts\nimport { RedisStore } from 'rate-limit-redis';\n// Pass: store: new RedisStore({ client: redisClient })\n```"
+  },
+  {
+    "id": "node-jwt-auth",
+    "name": "JWT Authentication Pattern",
+    "description": "Use short-lived access tokens (15m) with refresh tokens (7d) stored in HttpOnly cookies. Never store JWT in localStorage.",
+    "category": "pattern",
+    "domain": "Node.js",
+    "severity": "critical",
+    "tags": ["nodejs", "security", "jwt", "authentication"],
+    "template": "## JWT Authentication Pattern\n\n### Token generation\n```ts\nimport jwt from 'jsonwebtoken';\n\nexport function generateTokens(userId: string) {\n  const accessToken = jwt.sign({ sub: userId }, config.JWT_SECRET, { expiresIn: '15m' });\n  const refreshToken = jwt.sign({ sub: userId }, config.JWT_REFRESH_SECRET, { expiresIn: '7d' });\n  return { accessToken, refreshToken };\n}\n```\n\n### Login endpoint\n```ts\nrouter.post('/auth/login', authLimit, async (req, res) => {\n  const { email, password } = req.body;\n  const user = await userService.verifyCredentials(email, password);\n  const { accessToken, refreshToken } = generateTokens(user.id);\n\n  // Refresh token in HttpOnly cookie — not accessible to JS\n  res.cookie('refreshToken', refreshToken, {\n    httpOnly: true,\n    secure: config.NODE_ENV === 'production',\n    sameSite: 'strict',\n    maxAge: 7 * 24 * 60 * 60 * 1000, // 7d in ms\n  });\n\n  res.json({ accessToken, user: { id: user.id, email: user.email } });\n});\n```\n\n### Auth middleware\n```ts\nexport const authenticate: RequestHandler = (req, res, next) => {\n  const token = req.headers.authorization?.replace('Bearer ', '');\n  if (!token) throw new UnauthorizedError();\n  try {\n    const payload = jwt.verify(token, config.JWT_SECRET) as { sub: string };\n    req.userId = payload.sub;\n    next();\n  } catch {\n    throw new UnauthorizedError();\n  }\n};\n```\n\n**Rules:**\n- Access token in `Authorization: Bearer <token>` header (memory only, never localStorage)\n- Refresh token in `HttpOnly; Secure; SameSite=Strict` cookie\n- Rotate refresh tokens on every use (detect theft via reuse detection)"
+  },
+  {
+    "id": "node-streaming-api",
+    "name": "Node.js Streams for Large Data",
+    "description": "Use readable streams and pipe() to process large files or responses without loading everything into memory. Critical for file uploads, CSV processing, and proxying.",
+    "category": "pattern",
+    "domain": "Node.js",
+    "severity": "medium",
+    "tags": ["nodejs", "streams", "performance", "memory"],
+    "template": "## Node.js Streaming Patterns\n\n### Stream a file to the client\n```ts\nimport { createReadStream } from 'fs';\n\nrouter.get('/download/:filename', authenticate, (req, res) => {\n  const filePath = path.resolve('./uploads', req.params.filename);\n  // Security: ensure path doesn't escape uploads dir\n  if (!filePath.startsWith(path.resolve('./uploads'))) {\n    return res.status(403).json({ error: 'Access denied' });\n  }\n\n  res.setHeader('Content-Type', 'application/octet-stream');\n  res.setHeader('Content-Disposition', `attachment; filename=\"${req.params.filename}\"`);\n\n  const stream = createReadStream(filePath);\n  stream.on('error', () => res.status(404).end());\n  stream.pipe(res);\n});\n```\n\n### Stream CSV processing\n```ts\nimport { createReadStream } from 'fs';\nimport { parse } from 'csv-parse';\nimport { pipeline } from 'stream/promises';\n\nasync function processCsv(filePath: string) {\n  const results: Record<string, string>[] = [];\n  await pipeline(\n    createReadStream(filePath),\n    parse({ columns: true, skip_empty_lines: true }),\n    async function* (source) {\n      for await (const row of source) {\n        results.push(row); // or write to DB in batches\n      }\n    }\n  );\n  return results;\n}\n```\n\n### SSE (Server-Sent Events) — real-time updates\n```ts\nrouter.get('/events', (req, res) => {\n  res.setHeader('Content-Type', 'text/event-stream');\n  res.setHeader('Cache-Control', 'no-cache');\n  res.setHeader('Connection', 'keep-alive');\n  res.flushHeaders();\n\n  const interval = setInterval(() => {\n    res.write(`data: ${JSON.stringify({ time: Date.now() })}\\n\\n`);\n  }, 1000);\n\n  req.on('close', () => clearInterval(interval));\n});\n```"
+  },
+  {
+    "id": "node-health-check",
+    "name": "Health Check and Readiness Endpoints",
+    "description": "Expose /health (liveness) and /ready (readiness) endpoints for container orchestration. Liveness checks if the process is alive; readiness checks if it can serve traffic.",
+    "category": "pattern",
+    "domain": "Node.js",
+    "severity": "high",
+    "tags": ["nodejs", "devops", "kubernetes", "health"],
+    "template": "## Health Check Endpoints\n\n```ts\n// Liveness — is the process alive? (restart if fails)\napp.get('/health', (req, res) => {\n  res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });\n});\n\n// Readiness — can it serve traffic? (remove from load balancer if fails)\napp.get('/ready', async (req, res) => {\n  const checks: Record<string, boolean> = {};\n\n  // DB check\n  try {\n    await db.$queryRaw`SELECT 1`;\n    checks.database = true;\n  } catch {\n    checks.database = false;\n  }\n\n  // Redis check\n  try {\n    await redis.ping();\n    checks.redis = true;\n  } catch {\n    checks.redis = false;\n  }\n\n  const ready = Object.values(checks).every(Boolean);\n  res.status(ready ? 200 : 503).json({\n    status: ready ? 'ready' : 'not ready',\n    checks,\n  });\n});\n```\n\n### Kubernetes probe config\n```yaml\nlivenessProbe:\n  httpGet:\n    path: /health\n    port: 3000\n  initialDelaySeconds: 10\n  periodSeconds: 10\nreadinessProbe:\n  httpGet:\n    path: /ready\n    port: 3000\n  initialDelaySeconds: 5\n  periodSeconds: 5\n```"
+  },
+  {
+    "id": "node-api-versioning",
+    "name": "API Versioning Strategy",
+    "description": "Version APIs via URL path prefix (/api/v1/). Maintain backward compatibility for one major version. Deprecate with response headers before removal.",
+    "category": "pattern",
+    "domain": "Node.js",
+    "severity": "medium",
+    "tags": ["nodejs", "api-design", "versioning", "restful"],
+    "template": "## API Versioning\n\n### URL prefix versioning (recommended)\n```ts\n// app.ts\nimport v1Router from './routes/v1';\nimport v2Router from './routes/v2';\n\napp.use('/api/v1', v1Router);\napp.use('/api/v2', v2Router);\n\n// Latest alias\napp.use('/api', v2Router);\n```\n\n### Deprecation headers\n```ts\n// Middleware for deprecated routes\nexport function deprecated(sunsetDate: string): RequestHandler {\n  return (req, res, next) => {\n    res.setHeader('Deprecation', 'true');\n    res.setHeader('Sunset', sunsetDate); // RFC 8594\n    res.setHeader('Link', '</api/v2/users>; rel=\"successor-version\"');\n    next();\n  };\n}\n\n// Usage\nv1Router.get('/users', deprecated('2025-01-01'), listUsersV1);\n```\n\n**Rules:**\n- Never break a route without a deprecation period (minimum 6 months)\n- Log usage of deprecated endpoints to track client migration\n- Document breaking changes in a CHANGELOG\n- Consider header-based versioning (`API-Version: 2`) for internal APIs"
+  }
+]

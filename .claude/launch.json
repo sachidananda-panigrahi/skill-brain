@@ -4,19 +4,26 @@
     {
       "name": "HTTP Dashboard (dev)",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/.pnpm/nodemon@3.1.14/node_modules/nodemon/bin/nodemon.js", "index.js"],
+      "runtimeArgs": [
+        "node_modules/.pnpm/nodemon@3.1.14/node_modules/nodemon/bin/nodemon.js",
+        "src/entry-points/index.js"
+      ],
       "port": 3000
     },
     {
       "name": "HTTP Dashboard (prod)",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["index.js"],
+      "runtimeArgs": [
+        "src/entry-points/index.js"
+      ],
       "port": 3000
     },
     {
       "name": "MCP stdio server",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["mcp-server.js"],
+      "runtimeArgs": [
+        "src/entry-points/mcp-server.js"
+      ],
       "port": 3001
     }
   ]

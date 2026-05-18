@@ -1,0 +1,84 @@
+{
+  "skills": [
+    {
+      "id": "tanstack-query-v5-patterns",
+      "name": "TanStack Query v5 — Server State Management",
+      "description": "Use TanStack Query v5 for all server state. Covers useQuery, useMutation, cache invalidation, and staleTime/gcTime.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "high",
+      "tags": ["tanstack-query", "react-query", "server-state", "caching", "data-fetching"],
+      "template": "## TanStack Query v5\n\n```bash\nnpm install @tanstack/react-query\n```\n\n```tsx\n// Provider setup\nimport { QueryClient, QueryClientProvider } from '@tanstack/react-query';\nconst queryClient = new QueryClient({\n  defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },\n});\n\nexport function App() {\n  return <QueryClientProvider client={queryClient}><Routes /></QueryClientProvider>;\n}\n```\n\n### useQuery\n```tsx\nimport { useQuery } from '@tanstack/react-query';\n\nfunction UserProfile({ id }: { id: string }) {\n  const { data, isLoading, error } = useQuery({\n    queryKey: ['user', id],     // cache key — array form recommended\n    queryFn: () => fetchUser(id),\n    staleTime: 5 * 60_000,      // 5 min — don't refetch if fresh\n    gcTime: 10 * 60_000,        // 10 min — keep unused data in cache (v5: gcTime not cacheTime)\n  });\n  if (isLoading) return <Skeleton />;\n  if (error) return <ErrorBanner error={error} />;\n  return <Profile user={data} />;\n}\n```\n\n### useMutation + cache invalidation\n```tsx\nconst { mutateAsync, isPending } = useMutation({\n  mutationFn: (data: UpdateUserInput) => updateUser(id, data),\n  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['user', id] }),\n  onError: (err) => toast.error(err.message),\n});\n```\n\n**Key rules:**\n- `queryKey` must include all variables the query depends on\n- Prefer `invalidateQueries` over manual cache updates for correctness\n- Set `staleTime` per-query based on how often data changes"
+    },
+    {
+      "id": "zustand-store-patterns",
+      "name": "Zustand — Client State Store Patterns",
+      "description": "Use Zustand for client-side state. Slice pattern, immer middleware, devtools, and persist.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "high",
+      "tags": ["zustand", "state-management", "store", "client-state"],
+      "template": "## Zustand Store\n\n```bash\nnpm install zustand\n```\n\n### Basic store (with immer + devtools)\n```ts\nimport { create } from 'zustand';\nimport { immer } from 'zustand/middleware/immer';\nimport { devtools } from 'zustand/middleware';\n\ninterface CartStore {\n  items: CartItem[];\n  addItem: (item: CartItem) => void;\n  removeItem: (id: string) => void;\n  clear: () => void;\n}\n\nexport const useCartStore = create<CartStore>()(devtools(immer((set) => ({\n  items: [],\n  addItem: (item) => set((state) => { state.items.push(item); }),  // immer: mutate draft\n  removeItem: (id) => set((state) => { state.items = state.items.filter(i => i.id !== id); }),\n  clear: () => set({ items: [] }),\n}))));\n```\n\n### Slice pattern (large stores)\n```ts\n// slices/authSlice.ts\nexport const createAuthSlice = (set) => ({\n  user: null as User | null,\n  setUser: (user: User) => set({ user }),\n  logout: () => set({ user: null }),\n});\n\n// store.ts — combine slices\nconst useStore = create<AuthSlice & UiSlice>()((...a) => ({\n  ...createAuthSlice(...a),\n  ...createUiSlice(...a),\n}));\n```\n\n### Persistence\n```ts\nimport { persist } from 'zustand/middleware';\nexport const usePrefsStore = create(persist(\n  (set) => ({ theme: 'light', setTheme: (t) => set({ theme: t }) }),\n  { name: 'user-prefs', partialize: (s) => ({ theme: s.theme }) }\n));\n```\n\n**Rule:** Only store CLIENT state in Zustand. Server data belongs in TanStack Query."
+    },
+    {
+      "id": "jotai-atom-patterns",
+      "name": "Jotai — Atomic State Management",
+      "description": "Use Jotai for fine-grained atomic state. Derived atoms, async atoms, and atomWithStorage.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "medium",
+      "tags": ["jotai", "atoms", "atomic-state", "derived-state"],
+      "template": "## Jotai Atoms\n\n```bash\nnpm install jotai\n```\n\n```ts\nimport { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';\nimport { atomWithStorage } from 'jotai/utils';\n\n// Primitive atom\nconst countAtom = atom(0);\n\n// Derived (read-only) atom\nconst doubleAtom = atom((get) => get(countAtom) * 2);\n\n// Writable derived atom\nconst incrementAtom = atom(\n  null,\n  (get, set) => set(countAtom, get(countAtom) + 1)\n);\n\n// Persist to localStorage\nconst themeAtom = atomWithStorage<'light' | 'dark'>('theme', 'light');\n```\n\n### Usage in components\n```tsx\nfunction Counter() {\n  const [count, setCount] = useAtom(countAtom);\n  const double = useAtomValue(doubleAtom);    // read-only subscription\n  const increment = useSetAtom(incrementAtom); // write-only (no re-render on count change)\n  return (\n    <div>\n      <p>{count} × 2 = {double}</p>\n      <button onClick={increment}>+1</button>\n    </div>\n  );\n}\n```\n\n### Async atom\n```ts\nconst userAtom = atom(async (get) => {\n  const id = get(userIdAtom);\n  return fetchUser(id); // suspends automatically\n});\n// Use with <Suspense> boundary\n```\n\n**Jotai vs Zustand:** Use Jotai for highly granular, independent pieces of state where you want React's component model. Use Zustand for cohesive state slices with actions."
+    },
+    {
+      "id": "server-vs-client-state",
+      "name": "Server State vs Client State Decision Matrix",
+      "description": "Classify state correctly: server state in TanStack Query, client state in Zustand/Jotai, URL state in search params. Avoid duplicating server data into client stores.",
+      "category": "architecture",
+      "domain": "State Management",
+      "severity": "critical",
+      "tags": ["state-management", "architecture", "server-state", "client-state", "url-state"],
+      "template": "## State Classification Matrix\n\n| State Type | Tool | Examples |\n|-----------|------|----------|\n| Server state | TanStack Query | Users, products, orders, any DB data |\n| Client UI state | Zustand / Jotai | Sidebar open, modal state, selected items |\n| Form state | React Hook Form | Field values, validation, dirty/touched |\n| URL state | `useSearchParams` / `nuqs` | Filters, sort, pagination, active tab |\n| Session/auth | Zustand + persist | Current user, token, preferences |\n\n### Anti-pattern: server state in Zustand\n```ts\n// WRONG — duplicates server state, creates stale data bugs\nconst useUsersStore = create(() => ({\n  users: [],\n  fetchUsers: async () => { /* copies data into Zustand */ }\n}));\n\n// CORRECT — TanStack Query owns it\nconst { data: users } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });\n```\n\n### URL state with nuqs (shareable, bookmarkable)\n```ts\nimport { useQueryState } from 'nuqs';\n\nfunction ProductList() {\n  const [page, setPage]    = useQueryState('page', { defaultValue: '1' });\n  const [search, setSearch] = useQueryState('q',    { defaultValue: '' });\n  const [sort, setSort]    = useQueryState('sort',  { defaultValue: 'name' });\n  // URL: /products?page=2&q=shirt&sort=price\n}\n```\n\n**Rule:** Never copy server-fetched data into Zustand/Jotai. Always derive UI state from TanStack Query cache."
+    },
+    {
+      "id": "optimistic-updates-pattern",
+      "name": "Optimistic Updates with TanStack Query",
+      "description": "Implement optimistic UI updates: apply change immediately, rollback on failure. Prevents jarring loading states for mutations.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "medium",
+      "tags": ["optimistic-updates", "tanstack-query", "ux", "mutations"],
+      "template": "## Optimistic Updates\n\n```ts\nconst queryClient = useQueryClient();\n\nconst { mutate: toggleLike } = useMutation({\n  mutationFn: (postId: string) => likePost(postId),\n\n  onMutate: async (postId) => {\n    // 1. Cancel in-flight queries to avoid overwriting optimistic update\n    await queryClient.cancelQueries({ queryKey: ['post', postId] });\n\n    // 2. Snapshot current value for rollback\n    const previous = queryClient.getQueryData<Post>(['post', postId]);\n\n    // 3. Apply optimistic update\n    queryClient.setQueryData<Post>(['post', postId], (old) =>\n      old ? { ...old, likes: old.likes + 1, liked: true } : old\n    );\n\n    return { previous }; // context for rollback\n  },\n\n  onError: (_err, postId, ctx) => {\n    // 4. Roll back on error\n    if (ctx?.previous) {\n      queryClient.setQueryData(['post', postId], ctx.previous);\n    }\n  },\n\n  onSettled: (_data, _err, postId) => {\n    // 5. Always refetch to sync with server truth\n    queryClient.invalidateQueries({ queryKey: ['post', postId] });\n  },\n});\n```\n\n**Steps:** cancel → snapshot → apply → rollback on error → invalidate on settle"
+    },
+    {
+      "id": "tanstack-query-ssr-prefetch",
+      "name": "TanStack Query SSR Prefetching with Next.js",
+      "description": "Prefetch queries on the server and dehydrate state to avoid client-side waterfalls in Next.js App Router.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "medium",
+      "tags": ["tanstack-query", "nextjs", "ssr", "prefetch", "dehydrate", "hydrate"],
+      "template": "## TanStack Query + Next.js App Router SSR\n\n```tsx\n// app/products/page.tsx — Server Component\nimport { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';\n\nexport default async function ProductsPage() {\n  const queryClient = new QueryClient();\n\n  await queryClient.prefetchQuery({\n    queryKey: ['products'],\n    queryFn: fetchProducts,\n  });\n\n  return (\n    <HydrationBoundary state={dehydrate(queryClient)}>\n      <ProductList />  {/* receives pre-populated cache */}\n    </HydrationBoundary>\n  );\n}\n```\n\n```tsx\n// components/ProductList.tsx — Client Component\n'use client';\nimport { useQuery } from '@tanstack/react-query';\n\nexport function ProductList() {\n  const { data } = useQuery({\n    queryKey: ['products'],\n    queryFn: fetchProducts,\n    // No loading state — data already in cache from server!\n  });\n  return <ul>{data?.map(p => <li key={p.id}>{p.name}</li>)}</ul>;\n}\n```\n\n**Why:** Eliminates network waterfall — user sees data immediately, no spinner on initial load."
+    },
+    {
+      "id": "url-state-nuqs",
+      "name": "URL as State with nuqs",
+      "description": "Persist shareable UI state (filters, sort, tabs, pagination) in URL search params using nuqs for type-safe, Next.js-compatible URL state.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "medium",
+      "tags": ["url-state", "search-params", "nuqs", "nextjs", "shareable"],
+      "template": "## URL State with nuqs\n\n```bash\nnpm install nuqs\n```\n\n```tsx\n// app/products/page.tsx\nimport { createSearchParamsCache, parseAsString, parseAsInteger } from 'nuqs/server';\n\nexport const searchParamsCache = createSearchParamsCache({\n  q:    parseAsString.withDefault(''),\n  page: parseAsInteger.withDefault(1),\n  sort: parseAsString.withDefault('name'),\n});\n\nexport default function Page({ searchParams }) {\n  const { q, page, sort } = searchParamsCache.parse(searchParams);\n  return <ProductList query={q} page={page} sort={sort} />;\n}\n```\n\n```tsx\n// components/SearchBar.tsx — Client Component\n'use client';\nimport { useQueryState } from 'nuqs';\n\nexport function SearchBar() {\n  const [q, setQ] = useQueryState('q', {\n    defaultValue: '',\n    shallow: false,       // triggers server re-render on change\n    throttleMs: 300,      // debounce URL updates\n  });\n  return <input value={q} onChange={e => setQ(e.target.value)} />;\n}\n```\n\n**Benefit:** Filters survive page refresh, can be shared via URL, works with browser back/forward."
+    },
+    {
+      "id": "react-context-performance",
+      "name": "React Context Without Re-render Hell",
+      "description": "Prevent unnecessary re-renders from context by splitting context, memoizing values, or using useContextSelector.",
+      "category": "pattern",
+      "domain": "State Management",
+      "severity": "medium",
+      "tags": ["react", "context", "performance", "re-renders", "memoization"],
+      "template": "## Context Performance Patterns\n\n### Problem: one context = all consumers re-render\n```tsx\n// BAD — every consumer re-renders on any value change\nconst AppContext = createContext({ user, theme, cart, setCart });\n```\n\n### Fix 1: Split contexts by update frequency\n```tsx\nconst UserContext  = createContext<User | null>(null);  // changes rarely\nconst ThemeContext = createContext<Theme>('light');       // per-user\nconst CartContext  = createContext<CartState>({ ... });  // changes often\n```\n\n### Fix 2: Separate state from dispatch\n```tsx\nconst CartStateContext   = createContext<CartItem[]>([]);\nconst CartDispatchContext = createContext<Dispatch<CartAction>>(() => {});\n\n// Dispatch never changes — consumers using only dispatch never re-render\nfunction AddToCartButton({ item }) {\n  const dispatch = useContext(CartDispatchContext); // stable ref\n  return <button onClick={() => dispatch({ type: 'add', item })}>Add</button>;\n}\n```\n\n### Fix 3: Memoize context value\n```tsx\nfunction CartProvider({ children }) {\n  const [items, dispatch] = useReducer(cartReducer, []);\n  const value = useMemo(() => ({ items, dispatch }), [items]); // stable unless items changes\n  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;\n}\n```\n\n**When context re-renders are OK:** Infrequently changing data (auth user, theme). For frequent updates, use Zustand/Jotai instead."
+    }
+  ]
+}

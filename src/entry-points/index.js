@@ -53,15 +53,9 @@ app.use('/api/docs', apiDocsRouter);
 app.post('/api/scan', async (req, res) => {
   const { path: projectPath, url: remoteUrl } = req.body;
 
-  // Remote repo scan via repomix
+  // Remote repo scan — not supported; clone locally first then scan the path
   if (remoteUrl && !projectPath) {
-    const repomixBridge = require('../workflows/repomixBridge');
-    if (!repomixBridge.isAvailable()) {
-      return res.status(400).json({ error: 'Remote scan requires repomix. Install with: npm install repomix' });
-    }
-    const packed = await repomixBridge.packRemote(remoteUrl);
-    if (!packed) return res.status(500).json({ error: 'Failed to pack remote repo' });
-    return res.json({ message: 'Remote repo packed', totalTokens: packed.totalTokens, files: packed.files?.length || 0 });
+    return res.status(400).json({ error: 'Remote URL scan is not supported. Clone the repo locally and provide the path instead.' });
   }
 
   if (!projectPath || !fs.existsSync(projectPath)) {

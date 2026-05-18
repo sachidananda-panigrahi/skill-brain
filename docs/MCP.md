@@ -20,7 +20,7 @@ Add this to your `claude_desktop_config.json` (usually in `~/Library/Application
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+      "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
     }
   }
 }
@@ -33,7 +33,7 @@ The `.cursor/mcp.json` file in this repo is auto-detected when you open the work
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["${workspaceFolder}/mcp-server.js"]
+      "args": ["bin/skill-brain.js", "mcp"]
     }
   }
 }
@@ -46,7 +46,7 @@ For global Cursor config (`~/.cursor/mcp.json`):
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+      "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
     }
   }
 }
@@ -87,7 +87,7 @@ Add to your `settings.json`:
     {
       "name": "skill-brain",
       "command": "node",
-      "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+      "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
     }
   ]
 }

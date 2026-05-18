@@ -1,0 +1,14 @@
+{
+  "skillsMdPaths": [
+    {
+      "projectRoot": "/Users/sachidanandapanigrahi/projects/poc/skill-brain",
+      "outputPath": "/tmp/test-SKILLS.md",
+      "registeredAt": "2026-05-18T18:40:28.259Z"
+    },
+    {
+      "projectRoot": "/tmp/test-nextjs-project",
+      "outputPath": "/tmp/SKILLS.json",
+      "registeredAt": "2026-05-18T18:43:04.029Z"
+    }
+  ]
+}

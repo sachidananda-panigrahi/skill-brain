@@ -1,5 +1,49 @@
 # Runner Examples
 
+## SKILLS.md — Non-MCP Consumer
+
+The easiest way to integrate SkillBrain into a project is to generate a `SKILLS.md` file, which is automatically read by multiple AI assistants:
+
+### Supported Consumers
+
+- **Claude Code** — Reads SKILLS.md as part of codebase context
+- **Cursor** — Includes SKILLS.md in symbol indexing + composer context
+- **Copilot Chat** — Reads SKILLS.md when available in repo
+- **Repomix** — Bundled into project context with file annotation
+
+### Setup
+
+```bash
+# Generate SKILLS.md (auto-detects your tech stack)
+npx skill-brain init
+
+# Skills auto-update whenever CRUD happens
+# (dashboard, API, or manual edits)
+```
+
+The generated SKILLS.md includes machine-readable frontmatter:
+```markdown
+<!-- skill-brain:generated skill-brain:version=1.0.0 skill-brain:stack=nextjs,react,typescript -->
+
+# SKILLS — My Project
+
+[skill content...]
+```
+
+This metadata helps assistants understand the document's provenance and stack.
+
+### Force Re-generation
+
+```bash
+# Manually trigger regeneration of all registered SKILLS.md files
+curl -X POST http://localhost:3000/api/skills/export/markdown
+
+# Check status of all registered files
+curl http://localhost:3000/api/skills/export/status
+```
+
+---
+
 ## GitHub Actions
 
 ### Scan on push and search skills in CI
@@ -26,7 +70,7 @@ jobs:
       - run: pnpm install
 
       - name: Start skill-brain server
-        run: node index.js &
+        run: node src/entry-points/index.js &
         env:
           PORT: 3000
 
@@ -45,7 +89,7 @@ jobs:
             jq '.results[].skill.name'
 
       - name: Run diff review
-        run: node reviewMode.js
+        run: node src/engines/scanProject.js --review=origin/main --format=json --output=.review/report
         env:
           REVIEW_BASE: origin/main
 ```
@@ -54,7 +98,7 @@ jobs:
 
 ```yaml
 - name: Skill review (enforces critical anti-patterns)
-  run: node scanProject.js --review=origin/main --format=json --output=.review/report
+  run: node src/engines/scanProject.js --review=origin/main --format=json --output=.review/report
   continue-on-error: true
 
 - name: Upload review report
@@ -74,7 +118,7 @@ services:
   skill-brain:
     image: node:20-alpine
     working_dir: /app
-    command: node index.js
+    command: node src/entry-points/index.js
     volumes:
       - .:/app
       - skill-data:/data
@@ -112,8 +156,8 @@ pnpm install
 pnpm dev
 
 # Or start both HTTP server and MCP server
-node index.js &
-node mcp-server.js
+node src/entry-points/index.js &
+node bin/skill-brain.js mcp
 ```
 
 ## Remote Repo Scanning (Repomix)
@@ -133,8 +177,8 @@ npm install repomix
 ## Programmatic Usage
 
 ```js
-const { scanProject, generateSkillsFromScan } = require('skill-brain/scan');
-const { search } = require('skill-brain/rag');
+const { scanProject, generateSkillsFromScan } = require('@snpanigrahi88/skill-brain/scan');
+const { search } = require('@snpanigrahi88/skill-brain/rag');
 
 // Scan a project
 const scan = scanProject('/path/to/project');

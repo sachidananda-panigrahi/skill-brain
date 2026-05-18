@@ -2,7 +2,10 @@
   "mcpServers": {
     "skill-brain": {
       "command": "node",
-      "args": ["REPLACE_WITH_ABSOLUTE_PATH/mcp-server.js"],
+      "args": [
+        "REPLACE_WITH_ABSOLUTE_PATH/bin/skill-brain.js",
+        "mcp"
+      ],
       "env": {}
     }
   }

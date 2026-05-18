@@ -7,8 +7,6 @@ const { buildEnforcementSkills } = require('../rules/skillsLibrary');
 const { analyzeVue } = require('../parsers/vueAnalyzer');
 const { analyzeConfig } = require('../parsers/configAnalyzer');
 const { validate: validateFileName } = require('../parsers/fileNaming');
-const repomixBridge = require('../workflows/repomixBridge');
-
 // ── Merge helper ───────────────────────────────────────────────────────────────
 
 function mergeSkills(existing, newSkills, mode) {
@@ -46,8 +44,8 @@ if (require.main === module) {
     runReview(baseBranch, format, outputPath).then(code => process.exit(code));
   } else {
     if (!projectPathArg) {
-      console.error('Usage: node scanProject.js --path=/absolute/path/to/project [--mode=add|update]');
-      console.error('       node scanProject.js --review[=<baseBranch>] [--format=json|markdown|both] [--output=<path>]');
+      console.error('Usage: node src/engines/scanProject.js --path=/absolute/path/to/project [--mode=add|update]');
+      console.error('       node src/engines/scanProject.js --review[=<baseBranch>] [--format=json|markdown|both] [--output=<path>]');
       process.exit(1);
     }
     const projectPath = projectPathArg.split('=')[1];

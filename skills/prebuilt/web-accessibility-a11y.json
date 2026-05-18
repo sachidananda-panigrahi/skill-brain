@@ -1,0 +1,74 @@
+{
+  "skills": [
+    {
+      "id": "wcag-22-compliance",
+      "name": "WCAG 2.2 A/AA Compliance Requirements",
+      "description": "WCAG 2.2 success criteria for A and AA conformance. Includes new 2.2 criteria: focus appearance, dragging alternatives, target size.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "critical",
+      "tags": ["wcag", "accessibility", "a11y", "compliance", "wcag-22"],
+      "template": "## WCAG 2.2 — Key A/AA Requirements\n\n### Level A (must meet)\n- 1.1.1 Non-text content: `alt` on images, captions on video\n- 1.3.1 Info and relationships: semantic HTML, not just visual styling\n- 1.4.1 Use of color: don't convey info by color alone\n- 2.1.1 Keyboard: all functionality operable via keyboard\n- 2.4.2 Page titled: meaningful `<title>` on every page\n- 3.3.1 Error identification: describe errors in text, not just color\n\n### Level AA (must meet)\n- 1.4.3 Contrast: text ≥ 4.5:1, large text ≥ 3:1\n- 1.4.4 Resize text: 200% zoom without horizontal scroll\n- 1.4.10 Reflow: single-column layout at 320px wide\n- 1.4.11 Non-text contrast: UI components ≥ 3:1 against adjacent\n- 2.4.7 Focus visible: keyboard focus indicator must be visible\n- 3.1.2 Language of parts: `lang` attribute on foreign-language sections\n\n### New in WCAG 2.2\n- 2.4.11 **Focus Appearance**: focus indicator ≥ 2px outline, ≥ 3:1 contrast against background\n- 2.5.7 **Dragging Movements**: all drag actions have single-pointer alternative\n- 2.5.8 **Target Size**: interactive targets ≥ 24×24 CSS px (AA)\n- 3.3.7 **Redundant Entry**: don't re-ask for info already provided\n- 3.3.8 **Accessible Authentication**: no cognitive test for login (or provide alternative)\n\n### Testing tools\n```bash\nnpm install -D @axe-core/playwright axe-core\n# Automated: catches ~30–40% of WCAG issues\n# Manual: keyboard nav, screen reader (NVDA/VoiceOver) required for remainder\n```"
+    },
+    {
+      "id": "aria-roles-landmarks",
+      "name": "ARIA Roles, Landmarks, and Labels",
+      "description": "Use ARIA landmark roles and attributes correctly. Prefer native HTML semantics over ARIA. Rule: no ARIA is better than wrong ARIA.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["aria", "landmarks", "roles", "accessibility", "screen-reader"],
+      "template": "## ARIA Landmarks and Roles\n\n### Landmark regions (use native HTML first)\n```html\n<header>  <!-- role=\"banner\" (implicit) -->\n  <nav aria-label=\"Main navigation\">  <!-- role=\"navigation\" -->\n<main>     <!-- role=\"main\" -->\n  <section aria-labelledby=\"products-heading\">\n    <h2 id=\"products-heading\">Products</h2>\n  </section>\n<aside aria-label=\"Related articles\">  <!-- role=\"complementary\" -->\n<footer>   <!-- role=\"contentinfo\" -->\n```\n\n### aria-label vs aria-labelledby vs aria-describedby\n```html\n<!-- aria-label: direct string label (no visible text to reference) -->\n<button aria-label=\"Close dialog\"><X /></button>\n\n<!-- aria-labelledby: references another element's text -->\n<section aria-labelledby=\"sec-title\"><h2 id=\"sec-title\">Settings</h2></section>\n\n<!-- aria-describedby: supplementary description (not name) -->\n<input aria-describedby=\"pw-hint\" />\n<p id=\"pw-hint\">Minimum 8 characters</p>\n```\n\n### Live regions for dynamic updates\n```html\n<!-- Polite: announces when user is idle -->\n<div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\">{statusMessage}</div>\n\n<!-- Assertive: interrupts immediately (errors only) -->\n<div role=\"alert\" aria-live=\"assertive\">{errorMessage}</div>\n```\n\n### ARIA rules\n1. Use native HTML over ARIA always\n2. Don't add ARIA to native elements that already have the role\n3. All interactive ARIA elements must be keyboard operable\n4. Don't use `aria-hidden=\"true\"` on focusable elements"
+    },
+    {
+      "id": "keyboard-navigation",
+      "name": "Keyboard Navigation — Focus Management",
+      "description": "Ensure all interactive elements are keyboard accessible. Implement roving tabindex, skip links, and visible focus indicators.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["keyboard", "focus", "tabindex", "navigation", "accessibility"],
+      "template": "## Keyboard Navigation\n\n### Skip link (first focusable element on page)\n```html\n<a href=\"#main-content\" class=\"sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4\">\n  Skip to main content\n</a>\n<main id=\"main-content\">...</main>\n```\n\n### Focus visibility (WCAG 2.2: 2px min, 3:1 contrast)\n```css\n/* Never do this */\n*:focus { outline: none; }\n\n/* CORRECT — visible focus for keyboard, hidden for mouse */\n*:focus-visible {\n  outline: 2px solid oklch(60% 0.2 250);\n  outline-offset: 2px;\n}\n```\n\n### tabIndex rules\n```tsx\n<button>             // tabIndex=0 implicitly — do this\n<div tabIndex={0}>   // only when making custom interactive element\n<div tabIndex={-1}>  // programmatic focus only (modals, auto-focus)\n<div tabIndex={1}>   // NEVER positive tabIndex — breaks natural order\n```\n\n### Roving tabIndex for composite widgets (listbox, toolbar, menu)\n```tsx\nfunction MenuBar({ items }) {\n  const [activeIdx, setActiveIdx] = useState(0);\n  return (\n    <div role=\"menubar\">\n      {items.map((item, i) => (\n        <button\n          key={item.id}\n          role=\"menuitem\"\n          tabIndex={i === activeIdx ? 0 : -1}  // only active item in tab order\n          onKeyDown={(e) => {\n            if (e.key === 'ArrowRight') setActiveIdx((i + 1) % items.length);\n            if (e.key === 'ArrowLeft')  setActiveIdx((i - 1 + items.length) % items.length);\n          }}\n        >\n          {item.label}\n        </button>\n      ))}\n    </div>\n  );\n}\n```"
+    },
+    {
+      "id": "accessible-forms",
+      "name": "Accessible Form Patterns",
+      "description": "Every form control must have an accessible name. Error messages must be programmatically associated. Required fields must be announced.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["forms", "accessibility", "aria-invalid", "label", "error-messages"],
+      "template": "## Accessible Forms\n\n### Label association (always use native <label>)\n```html\n<!-- CORRECT — explicit label association -->\n<label for=\"email\">Email address</label>\n<input id=\"email\" type=\"email\" />\n\n<!-- CORRECT — wrapping label -->\n<label>\n  Password\n  <input type=\"password\" />\n</label>\n\n<!-- WRONG — placeholder is not a label substitute -->\n<input placeholder=\"Email\" />  <!-- no label! -->\n```\n\n### Error state with aria-invalid + aria-describedby\n```tsx\n<div>\n  <label htmlFor=\"email\">Email</label>\n  <input\n    id=\"email\"\n    type=\"email\"\n    aria-invalid={!!errors.email}         // announces \"invalid\" to screen reader\n    aria-describedby={errors.email ? 'email-error' : undefined}\n    aria-required=\"true\"\n  />\n  {errors.email && (\n    <p id=\"email-error\" role=\"alert\">     // role=alert: immediate announcement\n      {errors.email.message}\n    </p>\n  )}\n</div>\n```\n\n### Required fields\n```html\n<label for=\"name\">Full name <span aria-hidden=\"true\">*</span></label>\n<input id=\"name\" required aria-required=\"true\" />\n<p>Fields marked <span aria-hidden=\"true\">*</span> are required</p>\n<!-- aria-hidden on * because screen reader announces \"required\" from aria-required -->\n```\n\n### Group related fields\n```html\n<fieldset>\n  <legend>Shipping address</legend>\n  <label for=\"street\">Street</label><input id=\"street\" />\n  <label for=\"city\">City</label><input id=\"city\" />\n</fieldset>\n```"
+    },
+    {
+      "id": "color-contrast-reduced-motion",
+      "name": "Color Contrast and Motion Accessibility",
+      "description": "Meet WCAG contrast ratios and respect prefers-reduced-motion for users with vestibular disorders.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["color-contrast", "reduced-motion", "accessibility", "css", "animation"],
+      "template": "## Contrast + Motion\n\n### Contrast ratios (WCAG 2.1/2.2 AA)\n| Text | Ratio |\n|------|-------|\n| Normal text (<18pt / <14pt bold) | ≥ 4.5:1 |\n| Large text (≥18pt / ≥14pt bold) | ≥ 3:1 |\n| UI components, focus rings | ≥ 3:1 vs adjacent |\n\n```bash\n# Tools\nnpx accessible-colors                # CLI contrast checker\n# Browser: Chrome DevTools > Accessibility > Contrast Ratio\n# Design: Figma plugins — A11y Annotation Kit, Stark\n```\n\n### prefers-reduced-motion\n```css\n/* Default: full animation */\n.card { transition: transform 300ms ease; }\n\n/* Reduced: no transform, instant or opacity-only */\n@media (prefers-reduced-motion: reduce) {\n  .card { transition: opacity 150ms ease; transform: none !important; }\n  *, *::before, *::after {\n    animation-duration: 0.01ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.01ms !important;\n  }\n}\n```\n\n```tsx\n// React hook for conditional animation\nfunction useReducedMotion() {\n  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n}\n\nconst isReduced = useReducedMotion();\n<motion.div\n  animate={{ x: isReduced ? 0 : 100 }}\n  transition={{ duration: isReduced ? 0 : 0.5 }}\n/>\n```\n\n**Never** use color as the only way to convey information (errors, status, etc.)."
+    },
+    {
+      "id": "accessible-images-media",
+      "name": "Accessible Images and Media",
+      "description": "Write meaningful alt text, handle decorative images, add captions to video, and make SVGs accessible.",
+      "category": "enforcement",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["images", "alt-text", "svg", "media", "accessibility"],
+      "template": "## Accessible Images and Media\n\n### Alt text rules\n```html\n<!-- Informative image: describe purpose, not appearance -->\n<img src=\"dog.jpg\" alt=\"Golden retriever catching a frisbee in the park\" />\n\n<!-- Functional image (inside a link/button): describe destination/action -->\n<a href=\"/home\"><img src=\"logo.svg\" alt=\"Company Home\" /></a>\n\n<!-- Decorative image: empty alt, so screen reader skips it -->\n<img src=\"divider.png\" alt=\"\" role=\"presentation\" />\n\n<!-- Complex image (chart, graph): alt + long description -->\n<img src=\"chart.png\" alt=\"Monthly sales chart\" aria-describedby=\"chart-desc\" />\n<p id=\"chart-desc\">Sales grew from $10k in January to $45k in December...</p>\n```\n\n### SVG accessibility\n```html\n<!-- Decorative SVG icon -->\n<svg aria-hidden=\"true\" focusable=\"false\">...</svg>\n\n<!-- Meaningful SVG (standalone) -->\n<svg role=\"img\" aria-labelledby=\"svg-title\">\n  <title id=\"svg-title\">Upload file</title>\n  <path ... />\n</svg>\n```\n\n### Video/audio\n```html\n<video controls>\n  <source src=\"video.mp4\" type=\"video/mp4\" />\n  <track kind=\"captions\" src=\"captions.vtt\" srclang=\"en\" label=\"English\" default />\n</video>\n```\n\n**Rule:** If removing the image changes the meaning of the page, it needs alt text."
+    },
+    {
+      "id": "focus-management-modals",
+      "name": "Focus Management in Modals and Dialogs",
+      "description": "Trap focus inside open dialogs, restore focus on close, and use inert to prevent background interaction.",
+      "category": "pattern",
+      "domain": "Accessibility",
+      "severity": "high",
+      "tags": ["focus-trap", "modal", "dialog", "inert", "accessibility", "keyboard"],
+      "template": "## Focus Management in Modals\n\n### Using Radix/shadcn Dialog (recommended)\nRadix UI handles focus trap automatically via `@radix-ui/react-dialog`:\n```tsx\nimport { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';\n// Focus automatically trapped inside DialogContent\n// Focus restored to trigger on close\n```\n\n### Manual focus trap (when building custom)\n```tsx\nfunction Dialog({ open, onClose, children }) {\n  const dialogRef = useRef<HTMLDivElement>(null);\n  const prevFocusRef = useRef<Element | null>(null);\n\n  useEffect(() => {\n    if (open) {\n      prevFocusRef.current = document.activeElement;\n      // Move focus into dialog\n      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(\n        'button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'\n      );\n      firstFocusable?.focus();\n    } else {\n      // Restore focus to trigger element\n      (prevFocusRef.current as HTMLElement)?.focus();\n    }\n  }, [open]);\n\n  return open ? (\n    <div ref={dialogRef} role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dialog-title\">\n      {children}\n    </div>\n  ) : null;\n}\n```\n\n### inert attribute (modern approach)\n```tsx\n// Prevent background from receiving focus/clicks while dialog is open\n<main inert={dialogOpen}>  {/* all focusable elements inside are disabled */}\n  <RestOfApp />\n</main>\n<Dialog open={dialogOpen}>...</Dialog>\n```\n\n**Rules:**\n- Always use `aria-modal=\"true\"` on dialogs\n- Never leave focus stuck inside a closed dialog\n- Announce dialog title via `aria-labelledby`"
+    }
+  ]
+}

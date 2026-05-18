@@ -84,7 +84,7 @@ Use the launch configurations in `.vscode/launch.json`:
 - **Debug: Scan Project** — Step through the project scanner
 - **Debug: CLI** — Debug a CLI command
 
-Set breakpoints in `mcp-server.js` or `ragIndex.js`, then press **F5**.
+Set breakpoints in `src/entry-points/mcp-server.js` or `src/engines/ragIndex.js`, then press **F5**.
 
 ## REST Client Testing
 

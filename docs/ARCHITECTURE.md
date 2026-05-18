@@ -12,6 +12,39 @@ SkillBrain is a Node.js/CommonJS application (no transpilation, no bundler). It 
 
 ## Data Flow
 
+### Skills Initialization (skillsInitializer.js)
+
+```
+CLI: skill-brain init [path]
+  → detectStackFromPackageJson(projectPath)
+      → reads package.json + components.json (shadcn detection)
+      → returns stack: string[] (e.g., ['nextjs', 'react', 'typescript'])
+  → prebuiltSkillsLoader.loadSkillsForStack(stack)
+      → selects relevant files from skills/prebuilt/*.json
+      → deduplicates by skill id
+      → returns filtered skill list
+  → generateMarkdown(skills, stack)
+      → formats as SKILLS.md with machine-readable frontmatter
+      → frontmatter: skill-brain:generated, skill-brain:version, skill-brain:stack
+  → writeFile(projectPath/SKILLS.md, markdown)
+  → registerInConfig(projectPath, outputPath)
+      → updates skills/config.json with { path, version, stack, lastModified }
+```
+
+### Skills Fetching (skillsFetcher.js)
+
+```
+CLI: skill-brain fetch [--stack=stack] [--path=path]
+  → if --path: detectStackFromPackageJson(path)
+  → fetchFromRemote(stack)
+      → hits vercel-labs/agent-skills API (requires internet)
+      → fetches {domain}.json files for matching stack
+      → caches in skills/prebuilt/fetched/
+      → no network during normal operation (cached)
+  → prebuiltSkillsLoader.loadSkillsForStack(stack)
+      → now includes fetched skills
+```
+
 ### Scan flow
 
 ```
@@ -33,6 +66,8 @@ POST /api/scan { path }
   → merge with existing JSON files
   → ragIndex.markDirty(projectName)
   → ragIndex.markDirty(null)         (common invalidated too)
+  → setImmediate(() => skillsInitializer.regenerateAll())
+      → re-exports all registered SKILLS.md files (fire-and-forget)
 ```
 
 ### Search flow
@@ -152,11 +187,46 @@ TF-IDF always runs   → guaranteed results
 ```
 skills/
 ├── common.json          ← global skills (enforcement rules + cross-project)
+├── config.json          ← registry of SKILLS.md output paths (regenerated on init)
+├── prebuilt/            ← bundled offline skill files (24 files, 191 total skills)
+│   ├── typescript-strict-patterns.json
+│   ├── react-19-patterns.json
+│   ├── state-management-modern.json
+│   ├── web-accessibility-a11y.json
+│   ├── vite-build-tooling.json
+│   └── [19 more...]
+├── prebuilt/
+│   └── fetched/         ← remote-fetched skills (gitignored, cache only)
+│       └── nextjs-optimizations.json
 └── projects/
     ├── my-app.json
     ├── another-app.json
     └── ...
 ```
+
+### Prebuilt Skills
+
+- **Default 24 files, 191 skills across 33 domains** — bundled in npm package
+- Includes: TypeScript patterns, React 19, state management (TanStack Query, Zustand, Jotai), web accessibility, Vite, and more
+- `DEFAULT_SKILL_FILES` in `src/rules/prebuiltSkillsLoader.js` lists all 24 files
+- `dedupeById()` removes duplicate skills when loading multiple files
+
+### Config Registry (skills/config.json)
+
+```json
+{
+  "generated": [
+    {
+      "path": "/Users/name/my-app/SKILLS.md",
+      "version": "1.0.0",
+      "stack": ["nextjs", "react", "typescript"],
+      "lastModified": "2026-05-19T10:30:00Z"
+    }
+  ]
+}
+```
+
+Populated by `skill-brain init`, read by `regenerateAll()` to update SKILLS.md files on CRUD.
 
 `loadSkills(projectName)` returns `[...common, ...project]` — common first, project appended. Both share the same ID space; if a project re-generates a common-scoped skill with the same ID, it still shows twice (callers deduplicate by preference).
 

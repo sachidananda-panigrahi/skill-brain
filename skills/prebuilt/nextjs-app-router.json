@@ -1,0 +1,102 @@
+[
+  {
+    "id": "nextjs-server-vs-client-components",
+    "name": "Server vs Client Components Decision",
+    "description": "Default to Server Components. Add 'use client' only when you need interactivity, browser APIs, or React hooks. Interactivity should live at the leaf level, not the root.",
+    "category": "enforcement",
+    "domain": "Next.js App Router",
+    "severity": "critical",
+    "tags": ["nextjs", "rsc", "app-router", "server-components"],
+    "template": "## Server vs Client Component Decision\n\n| Need | Server Component | Client Component |\n|------|:---:|:---:|\n| Fetch data from DB / API | ✅ | ❌ avoid |\n| Access env vars (server-only) | ✅ | ❌ |\n| Use `useState`, `useEffect`, hooks | ❌ | ✅ |\n| Handle click/change events | ❌ | ✅ |\n| Browser APIs (localStorage, window) | ❌ | ✅ |\n| Import heavy client libs (charts, editors) | ❌ prefer | ✅ |\n| Stream large content | ✅ | ❌ |\n\n### Pattern: Push interactivity to leaves\n```tsx\n// app/users/page.tsx — Server Component\nasync function UsersPage() {\n  const users = await db.users.findMany(); // Direct DB access!\n  return (\n    <section>\n      <h1>Users</h1>\n      {users.map(u => (\n        <UserCard key={u.id} user={u} />  {/* Server Component */}\n      ))}\n    </section>\n  );\n}\n\n// components/UserCard.tsx — Still Server (no 'use client')\nasync function UserCard({ user }: { user: User }) {\n  return (\n    <article>\n      <h2>{user.name}</h2>\n      <DeleteButton userId={user.id} /> {/* Client Component at the leaf */}\n    </article>\n  );\n}\n\n// components/DeleteButton.tsx — Client Component\n'use client';\nfunction DeleteButton({ userId }: { userId: string }) {\n  const [isPending, startTransition] = useTransition();\n  return <button onClick={() => startTransition(() => deleteUser(userId))}>Delete</button>;\n}\n```\n\n**Rules:**\n- Never lift 'use client' to a layout or page unless the entire tree needs it\n- Pass Server Component output as `children` prop into Client Components to keep the tree partially server-rendered"
+  },
+  {
+    "id": "nextjs-server-actions-pattern",
+    "name": "Server Actions in App Router",
+    "description": "Use Server Actions for all form submissions and mutations. Define in separate server-only modules. Validate inputs server-side. Use revalidatePath/revalidateTag to refresh affected cache.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "high",
+    "tags": ["nextjs", "server-actions", "app-router", "forms"],
+    "template": "## Server Actions Pattern\n\n### actions/users.ts\n```ts\n'use server';\nimport { revalidatePath } from 'next/cache';\nimport { redirect } from 'next/navigation';\nimport { z } from 'zod';\n\nconst schema = z.object({ name: z.string().min(2), email: z.string().email() });\n\nexport async function createUser(prevState: unknown, formData: FormData) {\n  const parsed = schema.safeParse(Object.fromEntries(formData));\n  if (!parsed.success) {\n    return { errors: parsed.error.flatten().fieldErrors };\n  }\n  await db.users.create({ data: parsed.data });\n  revalidatePath('/users');\n  redirect('/users');\n}\n```\n\n### Form with useActionState\n```tsx\n'use client';\nimport { useActionState } from 'react';\nimport { createUser } from '@/actions/users';\n\nexport function CreateUserForm() {\n  const [state, action, isPending] = useActionState(createUser, null);\n  return (\n    <form action={action}>\n      <input name=\"name\" />\n      {state?.errors?.name && <p>{state.errors.name[0]}</p>}\n      <input name=\"email\" type=\"email\" />\n      {state?.errors?.email && <p>{state.errors.email[0]}</p>}\n      <button type=\"submit\" disabled={isPending}>\n        {isPending ? 'Creating...' : 'Create'}\n      </button>\n    </form>\n  );\n}\n```\n\n**Security rules:**\n- Always validate inputs in the Server Action — client can send anything\n- Use `cookies().get()` to check auth inside Server Actions — never trust client-passed userId\n- Never expose internal DB errors in the returned state"
+  },
+  {
+    "id": "nextjs-data-fetching-caching",
+    "name": "Data Fetching and Cache Control",
+    "description": "Use fetch() with Next.js cache options in Server Components. Understand the difference between static, dynamic, and revalidating data.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "high",
+    "tags": ["nextjs", "caching", "fetch", "performance", "app-router"],
+    "template": "## Next.js Data Fetching & Cache Control\n\n```ts\n// 1. Static — cached indefinitely (default)\nconst data = await fetch('https://api.example.com/products');\n\n// 2. No cache — opt into dynamic rendering\nconst data = await fetch('https://api.example.com/cart', { cache: 'no-store' });\n\n// 3. Time-based revalidation — ISR\nconst data = await fetch('https://api.example.com/products', {\n  next: { revalidate: 3600 } // revalidate every hour\n});\n\n// 4. Tag-based revalidation — on-demand ISR\nconst data = await fetch('https://api.example.com/products', {\n  next: { tags: ['products'] }\n});\n// Then in a Server Action:\nimport { revalidateTag } from 'next/cache';\nrevalidateTag('products'); // invalidate all fetches with this tag\n```\n\n### ORM / non-fetch data (Prisma, Drizzle)\n```ts\nimport { unstable_cache } from 'next/cache';\n\nconst getProducts = unstable_cache(\n  async () => db.products.findMany(),\n  ['products-list'],           // cache key\n  { tags: ['products'], revalidate: 3600 }\n);\n```\n\n### Route segment config\n```ts\n// page.tsx or layout.tsx\nexport const dynamic = 'force-dynamic'; // never cache this segment\nexport const revalidate = 60;           // revalidate every 60s\nexport const fetchCache = 'force-no-store';\n```\n\n**Rules:**\n- Prefer tagged caches over time-based — trigger revalidation precisely on data change\n- Dynamic rendering costs cold-start latency — use static + revalidation where possible\n- Parallel fetch independent data with `Promise.all()` in Server Components"
+  },
+  {
+    "id": "nextjs-streaming-suspense",
+    "name": "Streaming with Suspense",
+    "description": "Wrap slow data-fetching components in Suspense to stream HTML progressively. Fast parts of the page reach the user before slow ones finish.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "medium",
+    "tags": ["nextjs", "streaming", "suspense", "performance", "ux"],
+    "template": "## Streaming with Suspense in Next.js App Router\n\n```tsx\n// app/dashboard/page.tsx\nimport { Suspense } from 'react';\n\nexport default function DashboardPage() {\n  return (\n    <main>\n      {/* Fast — renders immediately */}\n      <StaticHeader />\n\n      {/* Slow — streams in when ready */}\n      <Suspense fallback={<MetricsSkeleton />}>\n        <MetricsPanel />  {/* async Server Component */}\n      </Suspense>\n\n      <Suspense fallback={<TableSkeleton />}>\n        <RecentOrdersTable />  {/* async Server Component */}\n      </Suspense>\n    </main>\n  );\n}\n\n// MetricsPanel.tsx — async Server Component\nasync function MetricsPanel() {\n  const metrics = await db.metrics.aggregate({ /* slow query */ });\n  return <div>{/* render metrics */}</div>;\n}\n```\n\n### loading.tsx — automatic Suspense boundary\n```tsx\n// app/dashboard/loading.tsx — wraps the entire route segment\nexport default function Loading() {\n  return <DashboardSkeleton />;\n}\n```\n\n**Rules:**\n- Each independently-slow component gets its own `<Suspense>` boundary\n- Use skeleton components as fallbacks — not spinners — to prevent layout shift\n- Don't `await` multiple fetches sequentially — use `Promise.all()` for parallel"
+  },
+  {
+    "id": "nextjs-metadata-api",
+    "name": "Metadata API for SEO",
+    "description": "Use Next.js 13+ Metadata API to set page-level and template-level meta tags, Open Graph images, and robots directives from Server Components.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "high",
+    "tags": ["nextjs", "seo", "metadata", "app-router"],
+    "template": "## Next.js Metadata API\n\n### Static metadata\n```ts\n// app/layout.tsx\nimport type { Metadata } from 'next';\n\nexport const metadata: Metadata = {\n  title: { default: 'My App', template: '%s | My App' },\n  description: 'Default description',\n  metadataBase: new URL('https://example.com'),\n  openGraph: {\n    type: 'website',\n    siteName: 'My App',\n    images: [{ url: '/og-default.jpg', width: 1200, height: 630 }],\n  },\n  twitter: { card: 'summary_large_image' },\n  robots: { index: true, follow: true },\n};\n```\n\n### Dynamic metadata (generateMetadata)\n```ts\n// app/products/[id]/page.tsx\nimport type { Metadata } from 'next';\n\nexport async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {\n  const product = await getProduct(params.id);\n  if (!product) return { title: 'Not Found' };\n\n  return {\n    title: product.name,\n    description: product.description,\n    openGraph: {\n      title: product.name,\n      description: product.description,\n      images: [{ url: product.imageUrl, width: 1200, height: 630 }],\n    },\n  };\n}\n```\n\n### Dynamic OG image (opengraph-image.tsx)\n```tsx\n// app/products/[id]/opengraph-image.tsx\nimport { ImageResponse } from 'next/og';\n\nexport const runtime = 'edge';\nexport const size = { width: 1200, height: 630 };\n\nexport default async function OGImage({ params }: { params: { id: string } }) {\n  const product = await getProduct(params.id);\n  return new ImageResponse(\n    <div style={{ fontSize: 64, background: 'white', padding: 64 }}>{product.name}</div>\n  );\n}\n```"
+  },
+  {
+    "id": "nextjs-middleware",
+    "name": "Middleware for Auth and Redirects",
+    "description": "Use Next.js middleware (middleware.ts at project root) for auth guards, locale detection, A/B testing, and geo-based redirects — before the request hits a route.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "high",
+    "tags": ["nextjs", "middleware", "auth", "redirects"],
+    "template": "## Next.js Middleware\n\n```ts\n// middleware.ts (project root)\nimport { NextResponse } from 'next/server';\nimport type { NextRequest } from 'next/server';\nimport { verifyJwt } from '@/lib/auth';\n\nexport async function middleware(request: NextRequest) {\n  const { pathname } = request.nextUrl;\n\n  // Public paths — no auth needed\n  const isPublic = pathname.startsWith('/login') ||\n                   pathname.startsWith('/register') ||\n                   pathname.startsWith('/api/auth');\n  if (isPublic) return NextResponse.next();\n\n  // Verify JWT from cookie\n  const token = request.cookies.get('accessToken')?.value;\n  if (!token) {\n    const loginUrl = new URL('/login', request.url);\n    loginUrl.searchParams.set('from', pathname);\n    return NextResponse.redirect(loginUrl);\n  }\n\n  try {\n    const payload = await verifyJwt(token);\n    // Forward user info to headers for Server Components\n    const response = NextResponse.next();\n    response.headers.set('x-user-id', payload.sub);\n    return response;\n  } catch {\n    return NextResponse.redirect(new URL('/login', request.url));\n  }\n}\n\nexport const config = {\n  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|gif|webp)).*)'],\n};\n```\n\n**Rules:**\n- Middleware runs on the Edge runtime — no Node.js APIs, no Prisma\n- Use `matcher` to exclude static assets — don't run on every request\n- Heavy auth logic (DB lookups) belongs in Server Components or Route Handlers — middleware should only check tokens"
+  },
+  {
+    "id": "nextjs-image-optimization",
+    "name": "Image Optimization with next/image",
+    "description": "Always use next/image instead of <img>. It provides automatic format conversion (WebP/AVIF), lazy loading, size optimization, and prevents layout shift via aspect ratio.",
+    "category": "enforcement",
+    "domain": "Next.js App Router",
+    "severity": "high",
+    "tags": ["nextjs", "images", "performance", "web-vitals"],
+    "template": "## next/image Best Practices\n\n```tsx\nimport Image from 'next/image';\n\n// Hero image — eager load, high priority\n<Image\n  src=\"/hero.jpg\"\n  alt=\"Hero banner showing our product\"\n  width={1200}\n  height={630}\n  priority            // preloads — use for LCP images only\n  fetchPriority=\"high\"\n  quality={85}\n/>\n\n// Content image — lazy by default\n<Image\n  src={user.avatarUrl}\n  alt={`${user.name} profile picture`}\n  width={48}\n  height={48}\n  className=\"rounded-full\"\n/>\n\n// Fill a container (replaces background-image)\n<div className=\"relative aspect-video\">\n  <Image\n    src={product.imageUrl}\n    alt={product.name}\n    fill\n    sizes=\"(max-width: 768px) 100vw, 50vw\"  // IMPORTANT: helps browser pick correct size\n    className=\"object-cover\"\n  />\n</div>\n```\n\n### Remote images — configure domains\n```ts\n// next.config.ts\nconst config = {\n  images: {\n    remotePatterns: [\n      { protocol: 'https', hostname: 'cdn.example.com', pathname: '/images/**' }\n    ],\n  },\n};\n```\n\n**Rules:**\n- Always provide `alt` — empty string only for decorative images\n- Always provide `sizes` when using `fill` — missing `sizes` downloads the largest image\n- Only use `priority` on LCP images — using it everywhere defeats the purpose"
+  },
+  {
+    "id": "nextjs-route-handlers",
+    "name": "Route Handlers (API Routes)",
+    "description": "Use Route Handlers (app/api/.../route.ts) for webhooks, third-party callbacks, binary responses, or when you need full HTTP control. Prefer Server Actions for mutations from your own UI.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "medium",
+    "tags": ["nextjs", "api", "route-handlers", "app-router"],
+    "template": "## Route Handlers in App Router\n\n```ts\n// app/api/webhooks/stripe/route.ts\nimport { NextRequest, NextResponse } from 'next/server';\nimport Stripe from 'stripe';\n\nconst stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);\n\nexport async function POST(request: NextRequest) {\n  const body = await request.text(); // raw body for signature verification\n  const sig = request.headers.get('stripe-signature')!;\n\n  let event: Stripe.Event;\n  try {\n    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);\n  } catch {\n    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });\n  }\n\n  switch (event.type) {\n    case 'payment_intent.succeeded':\n      await handlePaymentSucceeded(event.data.object);\n      break;\n  }\n\n  return NextResponse.json({ received: true });\n}\n```\n\n### Dynamic route handler\n```ts\n// app/api/users/[id]/route.ts\nexport async function GET(request: NextRequest, { params }: { params: { id: string } }) {\n  const user = await db.users.findUnique({ where: { id: params.id } });\n  if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });\n  return NextResponse.json(user);\n}\n\nexport async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {\n  await db.users.delete({ where: { id: params.id } });\n  return new NextResponse(null, { status: 204 });\n}\n```\n\n**Server Action vs Route Handler:**\n- Own UI mutation → Server Action\n- Third-party webhooks, binary data, streaming → Route Handler\n- Public REST API → Route Handler"
+  },
+  {
+    "id": "nextjs-parallel-intercepting-routes",
+    "name": "Parallel and Intercepting Routes",
+    "description": "Use parallel routes (@folder) for simultaneous layout slots and intercepting routes ((...)) for modal patterns that show content without navigating away from the current page.",
+    "category": "pattern",
+    "domain": "Next.js App Router",
+    "severity": "medium",
+    "tags": ["nextjs", "routing", "modals", "parallel-routes"],
+    "template": "## Parallel & Intercepting Routes\n\n### Parallel routes — dashboard with independent slots\n```\napp/dashboard/\n├── layout.tsx          # receives @analytics and @team as props\n├── @analytics/\n│   └── page.tsx\n└── @team/\n    └── page.tsx\n```\n\n```tsx\n// app/dashboard/layout.tsx\nexport default function Layout({ children, analytics, team }) {\n  return (\n    <div className=\"grid grid-cols-2\">\n      {analytics}\n      {team}\n    </div>\n  );\n}\n```\n\n### Intercepting routes — photo modal\n```\napp/\n├── photos/\n│   ├── [id]/\n│   │   └── page.tsx     # full page when navigated directly\n│   └── page.tsx\n└── @modal/\n    └── (.)photos/\n        └── [id]/\n            └── page.tsx  # intercepted — shows as modal from /photos\n```\n\n**When to use:**\n- Modals that are deep-linkable (share the URL) → intercepting routes\n- Dashboard segments that load and refresh independently → parallel routes\n- Soft navigation shows modal; hard refresh shows full page → both together"
+  },
+  {
+    "id": "nextjs-font-optimization",
+    "name": "Font Optimization with next/font",
+    "description": "Use next/font/google or next/font/local to self-host fonts with automatic subsetting, zero layout shift, and no external network requests at runtime.",
+    "category": "enforcement",
+    "domain": "Next.js App Router",
+    "severity": "medium",
+    "tags": ["nextjs", "fonts", "performance", "cls"],
+    "template": "## next/font Optimization\n\n```ts\n// app/fonts.ts\nimport { Inter, Playfair_Display } from 'next/font/google';\nimport localFont from 'next/font/local';\n\nexport const inter = Inter({\n  subsets: ['latin'],\n  display: 'swap',\n  variable: '--font-inter', // expose as CSS var\n});\n\nexport const playfair = Playfair_Display({\n  subsets: ['latin'],\n  weight: ['400', '700'],\n  style: ['normal', 'italic'],\n  variable: '--font-playfair',\n  display: 'swap',\n});\n\n// Self-hosted font\nexport const brandFont = localFont({\n  src: './fonts/Brand-Regular.woff2',\n  variable: '--font-brand',\n  display: 'swap',\n});\n```\n\n```tsx\n// app/layout.tsx\nimport { inter, playfair } from './fonts';\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang=\"en\" className={`${inter.variable} ${playfair.variable}`}>\n      <body className={inter.className}>{children}</body>\n    </html>\n  );\n}\n```\n\n```css\n/* Use variables in CSS */\nh1, h2 { font-family: var(--font-playfair); }\nbody    { font-family: var(--font-inter); }\n```\n\n**Rules:**\n- Max 2 font families per project — each additional font is a performance cost\n- Use `display: 'swap'` to avoid invisible text while loading\n- Specify `subsets` — reduces file size significantly\n- Self-host with `localFont` if GDPR compliance or offline support is needed"
+  }
+]

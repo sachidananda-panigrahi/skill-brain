@@ -7,11 +7,11 @@
  * Usage in claude.json / .cursor/mcp.json / zed settings:
  *   {
  *     "command": "node",
- *     "args": ["/absolute/path/to/skill-brain/mcp-server.js"]
+ *     "args": ["/absolute/path/to/skill-brain/bin/skill-brain.js", "mcp"]
  *   }
  *
- * Or with npx (if published):
- *   { "command": "npx", "args": ["skill-brain-mcp"] }
+ * Or with a repo-local relative path:
+ *   { "command": "node", "args": ["bin/skill-brain.js", "mcp"] }
  */
 
 const readline = require('readline');

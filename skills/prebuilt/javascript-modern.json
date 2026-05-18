@@ -1,0 +1,102 @@
+[
+  {
+    "id": "js-optional-chaining-nullish",
+    "name": "Optional Chaining & Nullish Coalescing",
+    "description": "Use ?. to safely traverse nullable chains and ?? to provide defaults without swallowing falsy values like 0 or empty string.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "es2020", "nullsafety"],
+    "template": "## Optional Chaining & Nullish Coalescing\n\n```js\n// ❌ Verbose guard chains\nconst city = user && user.address && user.address.city;\nconst count = data.count !== null && data.count !== undefined ? data.count : 0;\n\n// ✅ Optional chaining + nullish coalescing\nconst city = user?.address?.city;\nconst count = data.count ?? 0;        // ?? only triggers on null/undefined, not 0 or ''\nconst label = config.label ?? 'Default';\n\n// ✅ Method calls and dynamic access\nconst len = arr?.length;\nconst val = obj?.[key];\nconst result = api?.fetch?.();\n\n// ✅ Nullish assignment — set only if currently null/undefined\nconfig.timeout ??= 5000;\n```\n\n**Key difference: ?? vs ||**\n```js\n0 ?? 'default'   // → 0    (0 is not null/undefined)\n0 || 'default'   // → 'default' (0 is falsy)\n'' ?? 'default'  // → ''   (empty string is valid)\n'' || 'default'  // → 'default' (empty string is falsy)\n```"
+  },
+  {
+    "id": "js-destructuring-patterns",
+    "name": "Destructuring Patterns",
+    "description": "Use object and array destructuring with defaults, renaming, and rest to write concise, self-documenting code.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "destructuring", "es6"],
+    "template": "## Destructuring Patterns\n\n```js\n// Object destructuring with rename + default\nconst { name: userName = 'Anonymous', role = 'user', ...rest } = user;\n\n// Function parameter destructuring\nfunction createUser({ name, email, role = 'member', notify = true } = {}) {\n  // ...\n}\n\n// Array destructuring with skip\nconst [first, , third] = items;\nconst [head, ...tail] = list;\n\n// Nested destructuring\nconst { address: { city, zip = '00000' } } = user;\n\n// Swap without temp variable\n[a, b] = [b, a];\n\n// Destructure in loops\nfor (const [key, value] of Object.entries(obj)) { /* ... */ }\nfor (const { id, name } of users) { /* ... */ }\n```\n\n**Rules:**\n- Always provide a default `= {}` for destructured parameters so the function is callable with no args\n- Limit destructuring depth to 2 levels — deeper nesting hurts readability"
+  },
+  {
+    "id": "js-async-patterns",
+    "name": "Async/Await and Promise Patterns",
+    "description": "Prefer async/await over raw .then() chains. Use Promise.allSettled for independent operations, Promise.any for first-success, and AbortController for cancellation.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "high",
+    "tags": ["javascript", "async", "promises", "es2021"],
+    "template": "## Async/Await & Promise Patterns\n\n### Basic async/await\n```js\nasync function fetchUser(id) {\n  try {\n    const response = await fetch(`/api/users/${id}`);\n    if (!response.ok) throw new Error(`HTTP ${response.status}`);\n    return await response.json();\n  } catch (err) {\n    console.error('fetchUser failed:', err);\n    throw err; // re-throw — don't swallow\n  }\n}\n```\n\n### Parallel fetches\n```js\n// ✅ Run in parallel, fail if any fails\nconst [user, posts] = await Promise.all([fetchUser(id), fetchPosts(id)]);\n\n// ✅ Run in parallel, get all results regardless of failure\nconst results = await Promise.allSettled([fetchA(), fetchB(), fetchC()]);\nconst succeeded = results.filter(r => r.status === 'fulfilled').map(r => r.value);\n\n// ✅ First success wins\nconst data = await Promise.any([mirror1(), mirror2(), mirror3()]);\n```\n\n### AbortController for cancellable fetch\n```js\nfunction fetchWithCancel(url) {\n  const controller = new AbortController();\n  const promise = fetch(url, { signal: controller.signal }).then(r => r.json());\n  return { promise, cancel: () => controller.abort() };\n}\n\n// In React\nuseEffect(() => {\n  const { promise, cancel } = fetchWithCancel('/api/data');\n  promise.then(setData).catch(err => { if (err.name !== 'AbortError') setError(err); });\n  return cancel; // cleanup on unmount / dep change\n}, []);\n```\n\n**Rules:**\n- Never `await` inside a loop when items are independent — collect promises and `await Promise.all()`\n- Always handle rejections — unhandled promise rejections crash Node 15+"
+  },
+  {
+    "id": "js-modules-esm",
+    "name": "ES Modules (ESM) Best Practices",
+    "description": "Use named exports as the default; use default exports only for framework conventions. Dynamic import() for lazy loading. Keep circular imports impossible by design.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "esm", "modules", "bundling"],
+    "template": "## ES Modules Best Practices\n\n### Prefer named exports\n```js\n// ✅ Named exports — refactor-safe, tree-shakeable\nexport function formatDate(date) { /* ... */ }\nexport function parseDate(str)   { /* ... */ }\nexport const DATE_FORMAT = 'YYYY-MM-DD';\n\n// ❌ Single default of an object — breaks tree-shaking\nexport default { formatDate, parseDate, DATE_FORMAT };\n```\n\n### Re-exporting from barrel files (use sparingly)\n```js\n// src/utils/index.js\nexport { formatDate, parseDate } from './date';\nexport { slugify, truncate }   from './string';\n// ⚠️ Barrel files hurt bundler tree-shaking — prefer direct imports in perf-critical code\n```\n\n### Dynamic import for code splitting\n```js\n// Load heavy module only when needed\nconst { Chart } = await import('./chart');\n\n// React lazy\nconst HeavyPage = lazy(() => import('./pages/HeavyPage'));\n```\n\n### Import assertions (JSON)\n```js\nimport data from './config.json' with { type: 'json' };\n```\n\n**Rules:**\n- One module = one responsibility\n- No circular imports — if A imports B and B imports A, extract shared logic to C\n- Keep barrel `index.js` files optional — direct imports are always acceptable"
+  },
+  {
+    "id": "js-error-handling",
+    "name": "Structured Error Handling",
+    "description": "Create typed error classes, always rethrow after logging, and never silence errors with empty catch blocks.",
+    "category": "enforcement",
+    "domain": "Modern JavaScript",
+    "severity": "critical",
+    "tags": ["javascript", "errors", "reliability"],
+    "template": "## Structured Error Handling\n\n### Custom error classes\n```js\nclass AppError extends Error {\n  constructor(message, { code, status = 500, cause } = {}) {\n    super(message, { cause }); // native cause chaining (ES2022)\n    this.name = 'AppError';\n    this.code = code;\n    this.status = status;\n  }\n}\n\nclass ValidationError extends AppError {\n  constructor(message, fields) {\n    super(message, { code: 'VALIDATION_FAILED', status: 400 });\n    this.name = 'ValidationError';\n    this.fields = fields;\n  }\n}\n\nclass NotFoundError extends AppError {\n  constructor(resource) {\n    super(`${resource} not found`, { code: 'NOT_FOUND', status: 404 });\n    this.name = 'NotFoundError';\n  }\n}\n```\n\n### Usage\n```js\nasync function getUser(id) {\n  const user = await db.users.findById(id);\n  if (!user) throw new NotFoundError('User');\n  return user;\n}\n\ntry {\n  const user = await getUser(req.params.id);\n  res.json(user);\n} catch (err) {\n  if (err instanceof AppError) {\n    res.status(err.status).json({ error: err.message, code: err.code });\n  } else {\n    logger.error(err); // unexpected — log full stack\n    res.status(500).json({ error: 'Internal server error' });\n  }\n}\n```\n\n**Rules:**\n- Never: `catch (e) {}` — always handle or rethrow\n- Never: `catch (e) { console.log(e) }` without rethrowing — silent failures\n- Always chain `cause` when wrapping: `throw new AppError('msg', { cause: originalErr })`\n- In async functions: if you don't know what to do with an error, rethrow it"
+  },
+  {
+    "id": "js-immutable-patterns",
+    "name": "Immutable Data Patterns",
+    "description": "Never mutate arrays or objects in place. Use spread, structuredClone, Array methods that return new arrays, and Object.freeze for constants.",
+    "category": "enforcement",
+    "domain": "Modern JavaScript",
+    "severity": "high",
+    "tags": ["javascript", "immutability", "functional", "state"],
+    "template": "## Immutable Data Patterns\n\n### Arrays — always return new\n```js\n// ❌ Mutation\narray.push(item);\narray.splice(idx, 1);\narray.sort();\n\n// ✅ Immutable equivalents\nconst withItem   = [...array, item];\nconst withoutIdx = array.filter((_, i) => i !== idx);\nconst sorted     = [...array].sort();\n\n// New ES2023 methods (return new array)\nconst updated = array.with(idx, newValue);\nconst reversed = array.toReversed();\nconst sorted2  = array.toSorted();\nconst spliced  = array.toSpliced(idx, 1, newItem);\n```\n\n### Objects — spread for shallow, structuredClone for deep\n```js\n// Shallow update\nconst updated = { ...user, email: 'new@example.com' };\n\n// Nested update\nconst updated = {\n  ...user,\n  address: { ...user.address, city: 'London' },\n};\n\n// Deep clone (replaces JSON parse/stringify — handles Dates, Sets, Maps, undefined)\nconst clone = structuredClone(original);\n```\n\n### Frozen constants\n```js\nconst STATUS = Object.freeze({ PENDING: 'pending', DONE: 'done', FAILED: 'failed' });\nconst CONFIG = Object.freeze({ MAX_RETRIES: 3, TIMEOUT: 5000 });\n```\n\n**Rule:** If you catch yourself doing `arr.push()` or `obj.key = val` in shared state — stop. Return a new value."
+  },
+  {
+    "id": "js-object-groupby",
+    "name": "Object.groupBy and Map.groupBy (ES2024)",
+    "description": "Use Object.groupBy to bucket arrays by a key into a plain object. Use Map.groupBy when keys are non-string.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "low",
+    "tags": ["javascript", "es2024", "array", "groupby"],
+    "template": "## Object.groupBy / Map.groupBy (ES2024)\n\n```js\nconst users = [\n  { name: 'Alice', role: 'admin' },\n  { name: 'Bob',   role: 'user' },\n  { name: 'Carol', role: 'admin' },\n];\n\n// Object.groupBy → plain object with string keys\nconst byRole = Object.groupBy(users, u => u.role);\n// { admin: [Alice, Carol], user: [Bob] }\n\n// Map.groupBy → Map (allows object keys)\nconst byLength = Map.groupBy(users, u => u.name.length);\n\n// Replaces the common reduce pattern:\n// const byRole = users.reduce((acc, u) => { (acc[u.role] ??= []).push(u); return acc; }, {});\n```\n\n**Polyfill for older environments:**\n```js\nif (!Object.groupBy) {\n  Object.groupBy = (arr, fn) =>\n    arr.reduce((acc, item) => { (acc[fn(item)] ??= []).push(item); return acc; }, {});\n}\n```\n\n**Support:** Chrome 117+, Firefox 119+, Safari 17.4+. Node 21+."
+  },
+  {
+    "id": "js-closures-module-pattern",
+    "name": "Closures and Module Pattern",
+    "description": "Understand closures as the foundation of private state in JavaScript. Use the module pattern for encapsulation when class syntax is overkill.",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "closures", "encapsulation", "module-pattern"],
+    "template": "## Closures and Module Pattern\n\n### Counter with private state\n```js\nfunction createCounter(initial = 0) {\n  let count = initial; // private — not accessible outside\n\n  return {\n    increment: () => ++count,\n    decrement: () => --count,\n    reset:     () => { count = initial; },\n    value:     () => count,\n  };\n}\n\nconst counter = createCounter(10);\ncounter.increment(); // 11\ncounter.value();     // 11\ncounter.count;       // undefined — truly private\n```\n\n### Memoization via closure\n```js\nfunction memoize(fn) {\n  const cache = new Map();\n  return function (...args) {\n    const key = JSON.stringify(args);\n    if (cache.has(key)) return cache.get(key);\n    const result = fn.apply(this, args);\n    cache.set(key, result);\n    return result;\n  };\n}\n\nconst expensiveCalc = memoize((n) => { /* heavy work */ return n * n; });\n```\n\n### IIFE for one-off isolation\n```js\nconst result = (() => {\n  const temp = heavyComputation();\n  return transform(temp);\n})();\n// temp is never in outer scope\n```"
+  },
+  {
+    "id": "js-array-modern-methods",
+    "name": "Modern Array Methods",
+    "description": "Master flat, flatMap, findLast, findLastIndex, at(), Array.from, and the ES2023 immutable mutator methods (toSorted, toReversed, with, toSpliced).",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "arrays", "es2023", "functional"],
+    "template": "## Modern Array Methods\n\n```js\n// at() — negative index access\nconst last = arr.at(-1);\nconst secondLast = arr.at(-2);\n\n// flat / flatMap\nconst nested = [[1, 2], [3, [4, 5]]];\nnested.flat();    // [1, 2, 3, [4, 5]]  (depth 1)\nnested.flat(2);   // [1, 2, 3, 4, 5]\n\nconst sentences = ['Hello world', 'Foo bar'];\nsentences.flatMap(s => s.split(' ')); // ['Hello', 'world', 'Foo', 'bar']\n\n// findLast / findLastIndex (ES2023)\nconst lastEven = arr.findLast(x => x % 2 === 0);\nconst lastEvenIdx = arr.findLastIndex(x => x % 2 === 0);\n\n// Immutable mutators (ES2023)\nconst arr = [3, 1, 4, 1, 5];\narr.toSorted()         // new sorted array, arr unchanged\narr.toReversed()       // new reversed array\narr.with(2, 99)        // [3, 1, 99, 1, 5] — new array with index 2 = 99\narr.toSpliced(1, 2)    // [3, 1, 5] — remove 2 at index 1\n\n// Array.from with mapping\nconst squares = Array.from({ length: 5 }, (_, i) => i * i); // [0, 1, 4, 9, 16]\nconst chars   = Array.from('hello'); // ['h', 'e', 'l', 'l', 'o']\n```"
+  },
+  {
+    "id": "js-structuredclone",
+    "name": "structuredClone for Deep Copy",
+    "description": "Use structuredClone() — the native deep clone API — instead of JSON.parse(JSON.stringify()) or lodash.cloneDeep. Handles Dates, Sets, Maps, ArrayBuffers, undefined, circular (not functions).",
+    "category": "pattern",
+    "domain": "Modern JavaScript",
+    "severity": "medium",
+    "tags": ["javascript", "clone", "deep-copy", "es2022"],
+    "template": "## structuredClone — Native Deep Copy\n\n```js\n// ❌ Old approach — drops undefined, Dates become strings, fails on circular\nconst clone = JSON.parse(JSON.stringify(original));\n\n// ✅ Native — handles more types correctly\nconst clone = structuredClone(original);\n\n// Works with:\nconst obj = {\n  date: new Date(),\n  set: new Set([1, 2, 3]),\n  map: new Map([['a', 1]]),\n  nested: { arr: [1, 2, 3] },\n  undef: undefined,\n};\nconst deep = structuredClone(obj);\ndeep.date instanceof Date // true\ndeep.set instanceof Set   // true\n\n// Transferable objects (moves ownership — zero-copy for ArrayBuffer)\nconst buffer = new ArrayBuffer(1024);\nconst transferred = structuredClone(buffer, { transfer: [buffer] });\n// buffer is now detached (empty) — transferred has the data\n```\n\n**Limitations:** Cannot clone functions, DOM nodes, class instances with prototype methods.\n\n**Support:** All modern browsers + Node 17+."
+  }
+]

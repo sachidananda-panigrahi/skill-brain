@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { loadSkills, addSkill, updateSkill, deleteSkill, loadAllProjectNames } = require('../engines/skillEngine');
+const { toMarkdown } = require('../utils/skillsExporter');
 const ragIndex = require('../engines/ragIndex');
 const {
   loadPrebuiltSkills,
@@ -254,6 +255,81 @@ router.post('/coverage/report', async (req, res) => {
     const prebuilt = await loadPrebuiltSkills();
     const report = await generateSkillCoverageReport(detectedSkills, prebuilt);
     res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== EXPORT ENDPOINTS =====
+
+// GET /export?format=md|json&project=&domain= — export skills as Markdown or JSON
+router.get('/export', async (req, res) => {
+  const { project, domain, format = 'md' } = req.query;
+
+  try {
+    const userSkills = loadSkills(project || null);
+    const prebuilt = await loadPrebuiltSkills();
+    const all = [...userSkills, ...prebuilt];
+    const filtered = domain ? all.filter(s => (s.domain || '').toLowerCase().includes(domain.toLowerCase())) : all;
+
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="skills${project ? `-${project}` : ''}.json"`);
+      return res.json({ generated: new Date().toISOString(), total: filtered.length, skills: filtered });
+    }
+
+    const md = toMarkdown(filtered, { projectName: project, domain });
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="SKILLS${project ? `-${project}` : ''}.md"`);
+    return res.send(md);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /export/markdown — trigger regeneration of all registered SKILLS.md files
+router.post('/export/markdown', async (req, res) => {
+  try {
+    const { regenerateAll } = require('../workflows/skillsInitializer');
+    await regenerateAll();
+    const { loadConfig } = (() => {
+      const fs = require('fs');
+      const configPath = require('path').join(__dirname, '../../skills/config.json');
+      return {
+        loadConfig: () => {
+          try { return JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch { return { skillsMdPaths: [] }; }
+        }
+      };
+    })();
+    const config = loadConfig();
+    res.json({
+      ok: true,
+      regenerated: (config.skillsMdPaths || []).length,
+      paths: (config.skillsMdPaths || []).map(e => e.outputPath),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /export/status — list registered SKILLS.md output paths + metadata
+router.get('/export/status', (req, res) => {
+  try {
+    const fs = require('fs');
+    const configPath = require('path').join(__dirname, '../../skills/config.json');
+    let config = { skillsMdPaths: [] };
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+
+    const entries = (config.skillsMdPaths || []).map(e => ({
+      projectRoot: e.projectRoot,
+      outputPath:  e.outputPath,
+      registeredAt: e.registeredAt,
+      exists: fs.existsSync(e.outputPath),
+      lastModified: (() => {
+        try { return fs.statSync(e.outputPath).mtime.toISOString(); } catch { return null; }
+      })(),
+    }));
+    res.json({ registered: entries.length, entries });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
